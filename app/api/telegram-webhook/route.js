@@ -93,6 +93,11 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const attachments = [];
     let qrHtml = '';
 
+    const fontTitlePath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-32-white', 'open-sans-32-white.fnt');
+    const fontSubPath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-16-white', 'open-sans-16-white.fnt');
+    const fontTitle = await Jimp.loadFont(fontTitlePath);
+    const fontSub = await Jimp.loadFont(fontSubPath);
+
     for (let i = 0; i < ticketCount; i++) {
       const ticketUuid = uuidv4();
       await db.collection('qr_codes').add({
@@ -107,12 +112,6 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
 
       // Generar Imagen Final con Jimp
       const image = new Jimp(600, 1000, '#050505');
-      
-      const fontTitlePath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-32-white', 'open-sans-32-white.fnt');
-      const fontSubPath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-16-white', 'open-sans-16-white.fnt');
-      
-      const fontTitle = await Jimp.loadFont(fontTitlePath);
-      const fontSub = await Jimp.loadFont(fontSubPath);
 
       image.print(fontTitle, 0, 100, { text: "ENTRADA OFICIAL", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
       image.print(fontSub, 0, 180, { text: `Titular: ${row.name}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);

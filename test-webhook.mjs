@@ -1,28 +1,22 @@
-import fs from 'fs';
-import path from 'path';
-
 async function testWebhook() {
   try {
-    const form = new FormData();
-    form.append('name', 'Test User');
-    form.append('email', 'test@test.com');
-    form.append('cedula', 'V-12345678');
-    form.append('phone', '04141234567');
-    form.append('bank', 'BDV');
-    form.append('ref', '123456');
-    form.append('ticketCount', '1');
-    form.append('totalBs', '127.50');
-    form.append('eventId', 'test_event');
-    
-    // Create a dummy 1x1 png image
-    const dummyImage = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
-    const blob = new Blob([dummyImage], { type: 'image/png' });
-    form.append('receipt', blob, 'dummy.png');
+    const payload = {
+      callback_query: {
+        id: "12345",
+        data: "approve_dummy-id-that-doesnt-exist",
+        message: {
+          message_id: 1,
+          chat: { id: -5421039277 },
+          caption: "Test Caption"
+        }
+      }
+    };
 
-    console.log('Sending request to Vercel...');
-    const res = await fetch('https://docsve.vercel.app/api/tickets/request', {
+    console.log('Sending webhook...');
+    const res = await fetch('https://docsve.vercel.app/api/telegram-webhook', {
       method: 'POST',
-      body: form
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
     });
     
     console.log(`Status: ${res.status}`);

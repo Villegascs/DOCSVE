@@ -6,6 +6,7 @@ export default function PurchaseModal({ event, onClose }) {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
+  const [copiedKey, setCopiedKey] = useState(null);
 
   useEffect(() => {
     async function fetchRate() {
@@ -25,9 +26,10 @@ export default function PurchaseModal({ event, onClose }) {
   const ticketPriceEUR = 3;
   const totalBs = currentRateEUR > 0 ? (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2) : 'Cargando...';
 
-  const copyText = (text) => {
+  const copyText = (text, key) => {
     navigator.clipboard.writeText(text);
-    alert('¡Copiado!');
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
   };
 
   const handleSubmit = async (e) => {
@@ -73,22 +75,22 @@ export default function PurchaseModal({ event, onClose }) {
               <div className="bank-col">
                 <div className="bank-details">
                   <h4>PAGO MÓVIL</h4>
-                  <p className="copyable" onClick={() => copyText('0172')}>Banco: Bancamiga (0172)</p>
-                  <p className="copyable" onClick={() => copyText('31253699')}>Cédula: 31253699</p>
-                  <p className="copyable" onClick={() => copyText('04247509224')}>Teléfono: 0424-7509224</p>
+                  <p className="copyable" onClick={() => copyText('0172', 'banco')}>Banco: Bancamiga (0172) {copiedKey === 'banco' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                  <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>Cédula: 31253699 {copiedKey === 'cedula' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                  <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>Teléfono: 0424-7509224 {copiedKey === 'telefono' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
                   <p>Monto: <strong style={{color: 'white'}}>Bs. {totalBs}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span></p>
                 </div>
                 <div className="bank-details" style={{marginTop: '1.5rem'}}>
                   <h4>BINANCE (USDT)</h4>
-                  <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com')}>Correo (Binance Pay): zbcaj33@gmail.com</p>
+                  <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>Correo (Binance Pay): zbcaj33@gmail.com {copiedKey === 'binance' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
                 </div>
               </div>
               
               <div className="bank-col">
                 <div className="bank-details">
                   <h4>ZELLE</h4>
-                  <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com')}>Correo: contactofabianramirez@gmail.com</p>
-                  <p className="copyable" onClick={() => copyText('Fabian Ramirez')}>Titular: Fabian Ramirez</p>
+                  <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>Correo: contactofabianramirez@gmail.com {copiedKey === 'zcorreo' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                  <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>Titular: Fabian Ramirez {copiedKey === 'ztitular' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
                 </div>
               </div>
             </div>

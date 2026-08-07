@@ -47,120 +47,124 @@ export default function PurchaseModal({ event, onClose }) {
 
   return (
     <div className="modal active" onClick={(e) => { if (e.target.className.includes('modal active')) onClose(); }}>
-      <div className="modal-content">
+      <div className="modal-content custom-modal">
         <span className="close-modal" onClick={onClose}>&times;</span>
         
         {!success ? (
           <>
-            <h2>Adquirir <span className="highlight">Entradas</span></h2>
-            <p>Para {event?.title}</p>
+            <h2 className="modal-main-title">VERIFICACIÓN DE PAGO</h2>
+            <p className="modal-subtitle">Para asegurar tus entradas a <strong>DOCS</strong> (€3 c/u), realiza el pago vía Pago Móvil, Zelle o Binance y envía el comprobante.</p>
             
             <div className="payment-info">
-              <div className="bank-details">
-                <h4>Pago Móvil (BDV)</h4>
-                <p className="copyable" onClick={() => copyText('04141234567')}>0414-1234567 <i className="fas fa-copy"></i></p>
-                <p className="copyable" onClick={() => copyText('12345678')}>V-12345678 <i className="fas fa-copy"></i></p>
-                <p className="copyable" onClick={() => copyText('0102')}>Banco: 0102 <i className="fas fa-copy"></i></p>
+              <div className="bank-col">
+                <div className="bank-details">
+                  <h4>PAGO MÓVIL</h4>
+                  <p className="copyable" onClick={() => copyText('0172')}>Banco: Bancamiga (0172)</p>
+                  <p className="copyable" onClick={() => copyText('31253699')}>Cédula: 31253699</p>
+                  <p className="copyable" onClick={() => copyText('04247509224')}>Teléfono: 0424-7509224</p>
+                  <p>Monto: <strong style={{color: 'white'}}>Bs. {totalBs}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span></p>
+                </div>
+                <div className="bank-details" style={{marginTop: '1.5rem'}}>
+                  <h4>BINANCE (USDT)</h4>
+                  <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com')}>Correo (Binance Pay): zbcaj33@gmail.com</p>
+                </div>
               </div>
               
-              <div className="bank-details">
-                <h4>Binance Pay / Zinli</h4>
-                <p>Monto: <b>{ticketPriceEUR * ticketCount} USDT</b></p>
-                <p className="copyable" style={{fontSize: '0.7rem'}} onClick={() => copyText('docs.underground@gmail.com')}>docs.underground@gmail.com <i className="fas fa-copy"></i></p>
+              <div className="bank-col">
+                <div className="bank-details">
+                  <h4>ZELLE</h4>
+                  <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com')}>Correo: contactofabianramirez@gmail.com</p>
+                  <p className="copyable" onClick={() => copyText('Fabian Ramirez')}>Titular: Fabian Ramirez</p>
+                </div>
               </div>
             </div>
 
             <form className="payment-form" onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="name">Nombre y Apellido *</label>
-                  <input type="text" id="name" name="name" required />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="email">Correo Electrónico *</label>
-                  <input type="email" id="email" name="email" required />
-                </div>
+              <div className="form-group">
+                <label htmlFor="ticketCount">Número de Entradas</label>
+                <input 
+                  type="number" 
+                  id="ticketCount" 
+                  name="ticketCount"
+                  min="1" max="20" 
+                  value={ticketCount} 
+                  onChange={(e) => setTicketCount(Number(e.target.value))}
+                  required 
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="name">Nombre y Apellido</label>
+                <input type="text" id="name" name="name" placeholder="Ej. Carlos Pérez" required />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="email">Correo Electrónico (Para recibir las entradas)</label>
+                <input type="email" id="email" name="email" placeholder="tu@correo.com" required />
               </div>
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label htmlFor="cedula">Cédula de Identidad *</label>
+                  <label htmlFor="cedula">Cédula de Identidad</label>
                   <div style={{display: 'flex', gap: '0.5rem'}}>
-                    <select id="cedula-prefix" name="cedula-prefix" style={{width: '70px'}}>
-                      <option value="V-">V-</option>
-                      <option value="E-">E-</option>
-                      <option value="J-">J-</option>
+                    <select id="cedula-prefix" name="cedula-prefix" style={{width: '5rem', flexShrink: 0}}>
+                      <option value="V-">V</option>
+                      <option value="E-">E</option>
+                      <option value="J-">J</option>
+                      <option value="P-">P</option>
                     </select>
-                    <input type="text" id="cedula" name="cedula" style={{flex: 1}} required pattern="[0-9]*" />
+                    <input type="text" id="cedula" name="cedula" placeholder="12345678" style={{flexGrow: 1}} required pattern="[0-9]*" />
                   </div>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="phone">Teléfono (WhatsApp) *</label>
-                  <input type="tel" id="phone" name="phone" required placeholder="Ej: 04141234567" />
+                  <label htmlFor="phone">Teléfono de Contacto</label>
+                  <input type="tel" id="phone" name="phone" required placeholder="04141234567" pattern="[0-9]*" />
                 </div>
               </div>
-
-              <div className="form-group">
-                <label>Cantidad de Entradas</label>
-                <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                  <input 
-                    type="range" 
-                    min="1" max="10" 
-                    value={ticketCount} 
-                    onChange={(e) => setTicketCount(Number(e.target.value))}
-                    style={{flex: 1}}
-                  />
-                  <span style={{fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--primary-neon)', width: '30px', textAlign: 'center'}}>{ticketCount}</span>
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Total a Pagar (Bs.)</label>
-                <div style={{fontSize: '1.5rem', fontWeight: 'bold'}}>
-                  Bs. {totalBs} <span style={{fontSize:'0.75rem', color:'var(--text-secondary)', fontWeight:'normal'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span>
-                </div>
-              </div>
-
-              <hr style={{borderColor: 'rgba(255,255,255,0.05)', margin: '0.5rem 0'}} />
 
               <div className="form-grid">
                 <div className="form-group">
-                  <label htmlFor="bank">Banco Emisor del Pago *</label>
+                  <label htmlFor="bank">Método / Banco Emisor</label>
                   <select id="bank" name="bank" required>
-                    <option value="">Seleccione...</option>
-                    <option value="BDV">Banco de Venezuela (BDV)</option>
-                    <option value="Banesco">Banesco</option>
+                    <option value="">Selecciona una opción</option>
+                    <option value="Zelle">Zelle</option>
+                    <option value="Binance">Binance</option>
+                    <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
+                    <option value="Bancamiga">Bancamiga</option>
                     <option value="Mercantil">Mercantil</option>
                     <option value="Provincial">Provincial</option>
-                    <option value="Binance">Binance Pay (USDT)</option>
-                    <option value="Zinli">Zinli</option>
-                    <option value="Otro">Otro</option>
+                    <option value="Banesco">Banesco</option>
+                    <option value="Otro">Otro / Pago Móvil</option>
                   </select>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="ref">N° de Referencia (Últimos 4 o 6 dígitos) *</label>
-                  <input type="text" id="ref" name="ref" required />
+                  <label htmlFor="ref">Últimos 6 dígitos (Ref)</label>
+                  <input type="text" id="ref" name="ref" placeholder="Ej. 948210" maxLength="6" required />
                 </div>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="receipt">Captura / Comprobante de Pago *</label>
-                <input type="file" id="receipt" name="receipt" accept="image/png, image/jpeg, image/jpg" required />
+              <div className="form-group file-upload">
+                <label htmlFor="receipt">Captura del Comprobante</label>
+                <input type="file" id="receipt" name="receipt" accept="image/*" required />
               </div>
 
-              <button type="submit" className="btn-primary" style={{marginTop: '1rem'}} disabled={loading}>
+              <button type="submit" className="btn-primary full-width" style={{marginTop: '0.5rem'}} disabled={loading}>
                 {loading ? 'ENVIANDO...' : 'ENVIAR VERIFICACIÓN'}
               </button>
             </form>
           </>
         ) : (
-          <div style={{textAlign: 'center', padding: '2rem 0'}}>
-            <i className="fas fa-check-circle" style={{fontSize: '4rem', color: 'var(--primary-neon)', marginBottom: '1rem'}}></i>
-            <h2>¡Solicitud Recibida!</h2>
-            <p style={{color: 'var(--text-secondary)'}}>Hemos recibido tu comprobante de pago.</p>
-            <p>Una vez verificado, te enviaremos tus entradas con el código QR oficial al correo: <b>docs.underground@gmail.com</b></p>
-            <p style={{marginTop: '2rem', fontSize: '0.85rem', color: 'var(--text-secondary)'}}>Revisa tu bandeja de Spam por si acaso.</p>
-            <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem'}}>CERRAR</button>
+          <div className="success-message" style={{textAlign: 'center', padding: '2rem 0'}}>
+            <div className="check-animation">
+              <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
+                <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+              </svg>
+            </div>
+            <h3 style={{marginTop: '1rem', color: '#E0FF00'}}>¡Pago Enviado!</h3>
+            <p style={{color: 'var(--text-secondary)', marginTop: '1rem'}}>Hemos recibido tu comprobante de pago.</p>
+            <p style={{fontSize: '0.9rem'}}>Una vez verificado, te enviaremos tus entradas al correo.</p>
+            <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem'}}>Cerrar</button>
           </div>
         )}
       </div>

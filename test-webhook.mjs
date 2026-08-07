@@ -18,7 +18,7 @@ async function run() {
 
   try {
     console.log('Sending request to localhost...');
-    const res = await fetch('http://localhost:3001/api/tickets/request', {
+    const res = await fetch('http://localhost:3002/api/tickets/request', {
       method: 'POST',
       body: form
     });

@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  serverExternalPackages: ['firebase-admin', 'node-telegram-bot-api']
 };
 
 export default nextConfig;

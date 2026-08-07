@@ -5,11 +5,25 @@ export default function PurchaseModal({ event, onClose }) {
   const [ticketCount, setTicketCount] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [currentRateEUR, setCurrentRateEUR] = useState(0);
 
-  // En producción, obtener de la base de datos o API BCV
-  const currentRateEUR = 42.5; 
+  useEffect(() => {
+    async function fetchRate() {
+      try {
+        const response = await fetch('https://ve.dolarapi.com/v1/euros/oficial');
+        const data = await response.json();
+        if (data && data.promedio) {
+          setCurrentRateEUR(Math.round(data.promedio * 100) / 100);
+        }
+      } catch (error) {
+        console.error('Error fetching BCV EUR rate:', error);
+      }
+    }
+    fetchRate();
+  }, []);
+
   const ticketPriceEUR = 3;
-  const totalBs = (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2);
+  const totalBs = currentRateEUR > 0 ? (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2) : 'Cargando...';
 
   const copyText = (text) => {
     navigator.clipboard.writeText(text);

@@ -30,14 +30,16 @@ export default function PurchaseModal({ event, onClose }) {
     formData.append('eventId', event.id);
 
     try {
-      // Simulación de envío
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      // const response = await fetch('/api/tickets/request', {
-      //   method: 'POST',
-      //   body: formData
-      // });
-      // const result = await response.json();
+      const response = await fetch('/api/tickets/request', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
       
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Error al procesar el pago');
+      }
+
       setSuccess(true);
     } catch (error) {
       console.error(error);

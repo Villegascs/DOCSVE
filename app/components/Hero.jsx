@@ -15,7 +15,6 @@ export default function Hero() {
           <span>WITHOUT MUSIC,</span>
           <span className="highlight">LIFE WOULD BE A MISTAKE.</span>
         </h1>
-        <p className="hero-subtitle">DOCS EVENTS.</p>
         
         <Countdown targetDate={nextEventDate.toISOString()} />
 

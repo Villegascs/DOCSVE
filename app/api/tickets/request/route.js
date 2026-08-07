@@ -82,6 +82,6 @@ export async function POST(req) {
     });
   } catch (error) {
     console.error('Error en /api/tickets/request:', error);
-    return NextResponse.json({ error: 'Error procesando la solicitud' }, { status: 500 });
+    return NextResponse.json({ error: 'Error procesando la solicitud: ' + (error.stack || error.message) }, { status: 500 });
   }
 }

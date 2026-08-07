@@ -141,10 +141,13 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       attachments
     };
 
-    transporter.sendMail(mailOptions, (err, info) => {
-      if (err) console.error("Error email SMTP:", err);
-      else console.log("Email enviado SMTP:", info.response);
-    });
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      console.log("Email enviado SMTP:", info.response);
+    } catch (err) {
+      console.error("Error email SMTP:", err);
+    }
+
 
   } catch (e) {
     console.error("Error en handleApprove:", e);

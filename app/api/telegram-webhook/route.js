@@ -150,11 +150,13 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       console.log("Email enviado SMTP:", info.response);
     } catch (err) {
       console.error("Error email SMTP:", err);
+      await sendTgMessage(chatId, `⚠️ <b>Error Crítico:</b> No se pudo enviar el correo a ${row.email}.\n\n<b>Motivo:</b> ${err.message}`, { parse_mode: 'HTML' });
     }
 
 
   } catch (e) {
     console.error("Error en handleApprove:", e);
+    await sendTgMessage(chatId, `❌ <b>Fallo interno del servidor:</b>\n${e.message}`, { parse_mode: 'HTML' }).catch(console.error);
   }
 }
 

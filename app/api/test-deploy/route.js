@@ -1,8 +1,17 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
 
 export async function GET() {
-  return NextResponse.json({ success: true, message: 'Firebase admin imported correctly if you see this!' });
+  let status = 'OK';
+  let message = 'All good';
+  let sa = process.env.FIREBASE_SERVICE_ACCOUNT;
+  try {
+    if (!sa) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT');
+    JSON.parse(sa);
+  } catch (e) {
+    status = 'ERROR';
+    message = e.message;
+  }
+  return NextResponse.json({ status, message, hasServiceAccount: !!sa });
 }

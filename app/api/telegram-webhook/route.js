@@ -5,7 +5,6 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
-import Jimp from 'jimp';
 import nodemailer from 'nodemailer';
 import path from 'path';
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -93,11 +92,6 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const attachments = [];
     let qrHtml = '';
 
-    const fontTitlePath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-32-white', 'open-sans-32-white.fnt');
-    const fontSubPath = path.join(process.cwd(), 'public', 'fonts', 'open-sans', 'open-sans-16-white', 'open-sans-16-white.fnt');
-    const fontTitle = await Jimp.loadFont(fontTitlePath);
-    const fontSub = await Jimp.loadFont(fontSubPath);
-
     for (let i = 0; i < ticketCount; i++) {
       const ticketUuid = uuidv4();
       await db.collection('qr_codes').add({
@@ -107,28 +101,22 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         created_at: new Date()
       });
 
-      const qrDataUrl = await QRCode.toDataURL(ticketUuid, { color: { dark: '#000000', light: '#FFFFFF' }, margin: 2 });
+      const qrDataUrl = await QRCode.toDataURL(ticketUuid, { 
+        color: { dark: '#000000', light: '#FFFFFF' }, 
+        margin: 2,
+        width: 350
+      });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      // Generar Imagen Final con Jimp
-      const image = new Jimp(600, 1000, '#050505');
-
-      image.print(fontTitle, 0, 100, { text: "ENTRADA OFICIAL", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
-      image.print(fontSub, 0, 180, { text: `Titular: ${row.name}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
-      image.print(fontSub, 0, 210, { text: `Entrada: ${i+1} de ${ticketCount}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+      attachments.push({ filename: `qrcode-docs-${i+1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
       
-      const qr = await Jimp.read(qrBuffer);
-      qr.resize(350, 350);
-      const qrX = (600 - qr.bitmap.width) / 2;
-      image.composite(qr, qrX, 300);
-
-      image.print(fontSub, 0, 700, { text: "NO COMPARTAS ESTE CÓDIGO", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
-      image.print(fontSub, 0, 730, { text: `ID: ${ticketUuid.split('-')[0]}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
-
-      const finalBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
-
-      attachments.push({ filename: `entrada-docs-${i+1}.jpg`, content: finalBuffer, cid: `qrcode_image_${i}` });
-      qrHtml += `<h3 style="color:#ccc;">Entrada ${i+1} de ${ticketCount}</h3><img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:350px;">`;
+      qrHtml += `
+      <div style="margin: 20px auto; max-width: 400px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333;">
+        <h3 style="color:#ccc; margin-top: 0;">Entrada ${i+1} de ${ticketCount}</h3>
+        <p style="color:#fff; font-size: 18px;"><strong>Titular:</strong> ${row.name}</p>
+        <img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:300px;">
+        <p style="color:#A0A0A0; font-size: 12px;">ID: ${ticketUuid.split('-')[0]}</p>
+      </div>`;
     }
 
     const mailOptions = {

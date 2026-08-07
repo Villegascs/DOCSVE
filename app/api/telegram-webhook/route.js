@@ -1,0 +1,145 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/firebase-admin';
+import TelegramBot from 'node-telegram-bot-api';
+import { v4 as uuidv4 } from 'uuid';
+import QRCode from 'qrcode';
+import Jimp from 'jimp';
+import nodemailer from 'nodemailer';
+import path from 'path';
+
+const token = process.env.TELEGRAM_BOT_TOKEN;
+const bot = token ? new TelegramBot(token, { polling: false }) : null;
+
+// Configurar Nodemailer
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+});
+
+export async function POST(req) {
+  try {
+    const body = await req.json();
+
+    if (body.callback_query && bot) {
+      const query = body.callback_query;
+      const [action, id] = query.data.split('_');
+      const chatId = query.message.chat.id;
+      const messageId = query.message.message_id;
+      const callbackQueryId = query.id;
+
+      if (action === 'approve') {
+        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
+      } else if (action === 'reject') {
+        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error procesando webhook de Telegram:', error);
+    return NextResponse.json({ error: 'Error processing webhook' }, { status: 500 });
+  }
+}
+
+async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
+  try {
+    const ticketRef = db.collection('tickets').doc(id);
+    const ticketDoc = await ticketRef.get();
+    
+    if (!ticketDoc.exists) return bot.sendMessage(chatId, "Error encontrando el ticket.");
+    const row = ticketDoc.data();
+    
+    if (row.status !== 'pending') return bot.answerCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+
+    await ticketRef.update({ status: 'approved' });
+
+    await bot.editMessageCaption(`${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
+      chat_id: chatId, message_id: messageId,
+      parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+    }).catch(console.error);
+    await bot.answerCallbackQuery(callbackQueryId).catch(console.error);
+
+    const ticketCount = row.ticket_count;
+    const attachments = [];
+    let qrHtml = '';
+
+    for (let i = 0; i < ticketCount; i++) {
+      const ticketUuid = uuidv4();
+      await db.collection('qr_codes').add({
+        ticket_id: id,
+        uuid: ticketUuid,
+        status: 'approved',
+        created_at: new Date()
+      });
+
+      const qrDataUrl = await QRCode.toDataURL(ticketUuid, { color: { dark: '#000000', light: '#FFFFFF' }, margin: 2 });
+      const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+
+      // Generar Imagen Final con Jimp
+      const image = new Jimp(600, 1000, '#050505');
+      
+      const fontTitle = await Jimp.loadFont(Jimp.FONT_SANS_32_WHITE);
+      const fontSub = await Jimp.loadFont(Jimp.FONT_SANS_16_WHITE);
+
+      image.print(fontTitle, 0, 100, { text: "ENTRADA OFICIAL", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+      image.print(fontSub, 0, 180, { text: `Titular: ${row.name}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+      image.print(fontSub, 0, 210, { text: `Entrada: ${i+1} de ${ticketCount}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+      
+      const qr = await Jimp.read(qrBuffer);
+      qr.resize(350, 350);
+      const qrX = (600 - qr.bitmap.width) / 2;
+      image.composite(qr, qrX, 300);
+
+      image.print(fontSub, 0, 700, { text: "NO COMPARTAS ESTE CÓDIGO", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+      image.print(fontSub, 0, 730, { text: `ID: ${ticketUuid.split('-')[0]}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
+
+      const finalBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+
+      attachments.push({ filename: `entrada-docs-${i+1}.png`, content: finalBuffer, cid: `qrcode_image_${i}` });
+      qrHtml += `<h3 style="color:#ccc;">Entrada ${i+1} de ${ticketCount}</h3><img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:350px;">`;
+    }
+
+    const mailOptions = {
+      from: `"DOCS Underground" <${process.env.EMAIL_USER}>`,
+      to: row.email,
+      subject: `Tus Entradas para DOCS`,
+      html: `<div style="background:#050505;color:white;padding:40px;font-family:sans-serif;text-align:center;">
+          <h2>¡Pago Verificado!</h2>
+          <p>Hola ${row.name}, tu pago de Bs. ${row.total_bs} ha sido verificado con éxito.</p>
+          <p>Aquí tienes tus códigos QR. <strong>Cada entrada es válida para 1 persona.</strong></p>
+          ${qrHtml}
+          <p style="color:#A0A0A0;margin-top:30px;">No compartas estos códigos. Serán escaneados individualmente en la puerta.</p>
+      </div>`,
+      attachments
+    };
+
+    transporter.sendMail(mailOptions, (err, info) => {
+      if (err) console.error("Error email SMTP:", err);
+      else console.log("Email enviado SMTP:", info.response);
+    });
+
+  } catch (e) {
+    console.error("Error en handleApprove:", e);
+  }
+}
+
+async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
+  try {
+    const ticketRef = db.collection('tickets').doc(id);
+    const ticketDoc = await ticketRef.get();
+    if (!ticketDoc.exists) return bot.sendMessage(chatId, "Error encontrando el ticket.");
+    
+    const row = ticketDoc.data();
+    if (row.status !== 'pending') return bot.answerCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+
+    await ticketRef.update({ status: 'rejected' });
+    
+    await bot.editMessageCaption(`${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
+      chat_id: chatId, message_id: messageId,
+      parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+    }).catch(console.error);
+    await bot.answerCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
+  } catch (e) {
+    console.error("Error en handleReject:", e);
+  }
+}

@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 export const maxDuration = 60; // Extend Vercel timeout to 60 seconds
 import { NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
@@ -56,9 +57,13 @@ export async function POST(req) {
       const callbackQueryId = query.id;
 
       if (action === 'approve') {
-        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
+        after(async () => {
+          await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
+        });
       } else if (action === 'reject') {
-        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
+        after(async () => {
+          await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
+        });
       }
     }
 

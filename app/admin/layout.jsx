@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, CalendarDays, Ticket, Settings, ScanLine, LogOut } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import './admin.css';
 
 export default function AdminLayout({ children }) {
@@ -12,8 +13,6 @@ export default function AdminLayout({ children }) {
     return <>{children}</>;
   }
 
-  // Protección simple de rutas (ejecutada en el cliente)
-  import { useEffect, useState } from 'react';
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {

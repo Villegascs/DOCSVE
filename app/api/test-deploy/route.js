@@ -5,13 +5,15 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   let status = 'OK';
   let message = 'All good';
-  let sa = process.env.FIREBASE_SERVICE_ACCOUNT;
+  
   try {
-    if (!sa) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT');
-    JSON.parse(sa);
+    const { db } = require('@/lib/firebase-admin.js');
+    if (!db) throw new Error("db is undefined");
+    message = 'Firebase loaded';
   } catch (e) {
     status = 'ERROR';
-    message = e.message;
+    message = e.stack || e.message;
   }
-  return NextResponse.json({ status, message, hasServiceAccount: !!sa });
+  
+  return NextResponse.json({ status, message });
 }

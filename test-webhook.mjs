@@ -17,8 +17,8 @@ async function run() {
   form.append('receipt', fileBlob, 'receipt.png');
 
   try {
-    console.log('Sending request to localhost...');
-    const res = await fetch('http://localhost:3002/api/tickets/request', {
+    console.log('Sending request to Vercel...');
+    const res = await fetch('https://docsve.vercel.app/api/tickets/request', {
       method: 'POST',
       body: form
     });

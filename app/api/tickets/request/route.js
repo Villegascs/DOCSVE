@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase-admin';
 import TelegramBot from 'node-telegram-bot-api';

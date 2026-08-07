@@ -39,25 +39,36 @@ export async function POST(req) {
     
     const insertId = ticketRef.id;
 
-    // Notify Telegram Admin (Enviamos el buffer directamente a Telegram para no depender del Storage si falla)
+    let telegramErrors = [];
     if (bot && adminChatIds.length > 0) {
       const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
 
       for (const chatId of adminChatIds) {
-        await bot.sendPhoto(chatId, buffer, {
-          caption,
-          parse_mode: 'HTML',
-          reply_markup: {
-            inline_keyboard: [[
-              { text: '✅ Aprobar y Enviar', callback_data: `approve_${insertId}` },
-              { text: '❌ Rechazar', callback_data: `reject_${insertId}` }
-            ]]
-          }
-        }, { filename: receiptFile.name, contentType: receiptFile.type }).catch(console.error);
+        try {
+          await bot.sendPhoto(chatId, buffer, {
+            caption,
+            parse_mode: 'HTML',
+            reply_markup: {
+              inline_keyboard: [[
+                { text: '✅ Aprobar y Enviar', callback_data: `approve_${insertId}` },
+                { text: '❌ Rechazar', callback_data: `reject_${insertId}` }
+              ]]
+            }
+          }, { filename: receiptFile.name || 'comprobante.png', contentType: receiptFile.type || 'image/png' });
+        } catch (err) {
+          console.error('Telegram Error:', err.message);
+          telegramErrors.push(err.message);
+        }
       }
+    } else {
+      telegramErrors.push('El bot no está configurado o no hay chat IDs validos.');
     }
 
-    return NextResponse.json({ success: true, message: 'Pago registrado. Esperando verificación.' });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Pago registrado. Esperando verificación.',
+      telegramErrors: telegramErrors.length > 0 ? telegramErrors : undefined
+    });
   } catch (error) {
     console.error('Error en /api/tickets/request:', error);
     return NextResponse.json({ error: 'Error procesando la solicitud' }, { status: 500 });

@@ -3,17 +3,13 @@ import { useState, useEffect } from 'react';
 
 export default function PurchaseModal({ event, onClose }) {
   const [ticketCount, setTicketCount] = useState(1);
-  const [totalBs, setTotalBs] = useState(0);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
   // En producción, obtener de la base de datos o API BCV
   const currentRateEUR = 42.5; 
   const ticketPriceEUR = 3;
-
-  useEffect(() => {
-    setTotalBs((currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2));
-  }, [ticketCount]);
+  const totalBs = (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2);
 
   const copyText = (text) => {
     navigator.clipboard.writeText(text);

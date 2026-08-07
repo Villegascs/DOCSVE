@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
-import { db, storage } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIds = process.env.TELEGRAM_ADMIN_CHAT_ID ? process.env.TELEGRAM_ADMIN_CHAT_ID.split(',').map(id => id.trim()) : [];
 export async function POST(req) {

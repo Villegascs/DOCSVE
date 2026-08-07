@@ -1,7 +1,5 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase-admin';
-import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import Jimp from 'jimp';
 import nodemailer from 'nodemailer';
@@ -13,10 +11,9 @@ export async function GET() {
     const attachments = [];
     let qrHtml = '';
     const row = { name: 'Prueba Completa', email: process.env.EMAIL_USER, total_bs: '100' };
-    const id = 'test-ticket-123';
 
     for (let i = 0; i < ticketCount; i++) {
-      const ticketUuid = uuidv4();
+      const ticketUuid = "test-uuid-12345";
       
       const qrDataUrl = await QRCode.toDataURL(ticketUuid, { color: { dark: '#000000', light: '#FFFFFF' }, margin: 2 });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
@@ -41,9 +38,9 @@ export async function GET() {
       image.print(fontSub, 0, 700, { text: "NO COMPARTAS ESTE CÓDIGO", alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
       image.print(fontSub, 0, 730, { text: `ID: ${ticketUuid.split('-')[0]}`, alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER }, 600);
 
-      const finalBuffer = await image.getBufferAsync(Jimp.MIME_PNG);
+      const finalBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
 
-      attachments.push({ filename: `entrada-docs-${i+1}.png`, content: finalBuffer, cid: `qrcode_image_${i}` });
+      attachments.push({ filename: `entrada-docs-${i+1}.jpg`, content: finalBuffer, cid: `qrcode_image_${i}` });
       qrHtml += `<h3 style="color:#ccc;">Entrada ${i+1} de ${ticketCount}</h3><img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:350px;">`;
     }
 

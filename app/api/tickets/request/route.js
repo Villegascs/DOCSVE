@@ -2,12 +2,8 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { db, storage } from '@/lib/firebase-admin';
-import TelegramBot from 'node-telegram-bot-api';
-
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIds = process.env.TELEGRAM_ADMIN_CHAT_ID ? process.env.TELEGRAM_ADMIN_CHAT_ID.split(',').map(id => id.trim()) : [];
-const bot = token ? new TelegramBot(token, { polling: false }) : null;
-
 export async function POST(req) {
   try {
     const formData = await req.formData();
@@ -42,21 +38,34 @@ export async function POST(req) {
     const insertId = ticketRef.id;
 
     let telegramErrors = [];
-    if (bot && adminChatIds.length > 0) {
+    if (token && adminChatIds.length > 0) {
       const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
 
       for (const chatId of adminChatIds) {
         try {
-          await bot.sendPhoto(chatId, buffer, {
-            caption,
-            parse_mode: 'HTML',
-            reply_markup: {
-              inline_keyboard: [[
-                { text: '✅ Aprobar y Enviar', callback_data: `approve_${insertId}` },
-                { text: '❌ Rechazar', callback_data: `reject_${insertId}` }
-              ]]
-            }
-          }, { filename: receiptFile.name || 'comprobante.png', contentType: receiptFile.type || 'image/png' });
+          const tgFormData = new FormData();
+          tgFormData.append('chat_id', chatId);
+          tgFormData.append('caption', caption);
+          tgFormData.append('parse_mode', 'HTML');
+          tgFormData.append('reply_markup', JSON.stringify({
+            inline_keyboard: [[
+              { text: '✅ Aprobar y Enviar', callback_data: `approve_${insertId}` },
+              { text: '❌ Rechazar', callback_data: `reject_${insertId}` }
+            ]]
+          }));
+          
+          const receiptBlob = new Blob([arrayBuffer], { type: receiptFile.type || 'image/png' });
+          tgFormData.append('photo', receiptBlob, receiptFile.name || 'comprobante.png');
+
+          const tgRes = await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, {
+            method: 'POST',
+            body: tgFormData
+          });
+
+          if (!tgRes.ok) {
+            const errData = await tgRes.text();
+            throw new Error(`Telegram API Error: ${errData}`);
+          }
         } catch (err) {
           console.error('Telegram Error:', err.message);
           telegramErrors.push(err.message);

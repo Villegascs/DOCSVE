@@ -2,15 +2,39 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
-import TelegramBot from 'node-telegram-bot-api';
 import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import Jimp from 'jimp';
 import nodemailer from 'nodemailer';
 import path from 'path';
-
 const token = process.env.TELEGRAM_BOT_TOKEN;
-const bot = token ? new TelegramBot(token, { polling: false }) : null;
+
+async function sendTgMessage(chatId, text, options = {}) {
+  const payload = { chat_id: chatId, text, ...options };
+  return fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
+
+async function answerTgCallbackQuery(callbackQueryId, options = {}) {
+  const payload = { callback_query_id: callbackQueryId, ...options };
+  return fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
+
+async function editTgMessageCaption(chatId, messageId, caption, options = {}) {
+  const payload = { chat_id: chatId, message_id: messageId, caption, ...options };
+  return fetch(`https://api.telegram.org/bot${token}/editMessageCaption`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
 
 // Configurar Nodemailer
 const transporter = nodemailer.createTransport({
@@ -22,7 +46,7 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    if (body.callback_query && bot) {
+    if (body.callback_query && token) {
       const query = body.callback_query;
       const [action, id] = query.data.split('_');
       const chatId = query.message.chat.id;
@@ -48,18 +72,20 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
     
-    if (!ticketDoc.exists) return bot.sendMessage(chatId, "Error encontrando el ticket.");
+    if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
     const row = ticketDoc.data();
     
-    if (row.status !== 'pending') return bot.answerCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+    if (row.status !== 'pending') {
+      answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+      return;
+    }
 
     await ticketRef.update({ status: 'approved' });
 
-    await bot.editMessageCaption(`${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
-      chat_id: chatId, message_id: messageId,
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
-    await bot.answerCallbackQuery(callbackQueryId).catch(console.error);
+    await answerTgCallbackQuery(callbackQueryId).catch(console.error);
 
     const ticketCount = row.ticket_count;
     const attachments = [];
@@ -129,18 +155,20 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
   try {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
-    if (!ticketDoc.exists) return bot.sendMessage(chatId, "Error encontrando el ticket.");
+    if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
     
     const row = ticketDoc.data();
-    if (row.status !== 'pending') return bot.answerCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+    if (row.status !== 'pending') {
+      answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+      return;
+    }
 
     await ticketRef.update({ status: 'rejected' });
     
-    await bot.editMessageCaption(`${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
-      chat_id: chatId, message_id: messageId,
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
-    await bot.answerCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
+    await answerTgCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
   } catch (e) {
     console.error("Error en handleReject:", e);
   }

@@ -1,5 +1,6 @@
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+export const maxDuration = 60; // Extend Vercel timeout to 60 seconds
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 import { v4 as uuidv4 } from 'uuid';

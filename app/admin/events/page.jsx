@@ -39,6 +39,7 @@ export default function AdminEvents() {
     }
   };
 
+  const openModal = (event = null) => {
     if (event) {
       setFormData({
         ...event,

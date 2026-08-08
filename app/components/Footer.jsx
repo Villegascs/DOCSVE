@@ -13,7 +13,7 @@ export default function Footer() {
             />
           </div>
           <div>
-            <a href="https://instagram.com/docs.events" target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'none', transition: 'color 0.3s' }} onMouseOver={(e) => e.target.style.color = '#ccc'} onMouseOut={(e) => e.target.style.color = 'white'}>
+            <a href="https://www.instagram.com/docs______/" target="_blank" rel="noopener noreferrer" style={{ color: 'white', textDecoration: 'none', transition: 'color 0.3s' }} onMouseOver={(e) => e.target.style.color = '#ccc'} onMouseOut={(e) => e.target.style.color = 'white'}>
               <i className="fab fa-instagram" style={{ fontSize: '1.5rem', pointerEvents: 'none' }}></i>
             </a>
           </div>

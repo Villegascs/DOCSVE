@@ -51,15 +51,20 @@ export default function EventsGrid() {
               <p style={{textAlign: 'center', width: '100%', color: '#888'}}>Cargando eventos...</p>
             ) : events.length === 0 ? (
               <p style={{textAlign: 'center', width: '100%', color: '#888'}}>No hay eventos disponibles en este momento.</p>
-            ) : events.map((evt) => (
-              <div key={evt.id} className={`event-card ${evt.status === 'disabled' ? 'disabled' : ''} centered-bottom`}>
+            ) : events.map((evt) => {
+              const isSoldOut = evt.ticketLimit > 0 && evt.soldTickets >= evt.ticketLimit;
+              const isDisabled = evt.status === 'disabled' || evt.status === 'archived' || isSoldOut;
+              
+              return (
+              <div key={evt.id} className={`event-card ${isDisabled ? 'disabled' : ''}`}>
                 <div className="event-image">
                   <img src={evt.image_url || evt.image} alt={evt.title} />
                   <div className="event-date">
                     <span className="day">{evt.displayDate}</span>
                     <span className="month">{evt.displayMonth}</span>
                   </div>
-                  {evt.status === 'active' && <div className="event-badge">ON SALE</div>}
+                  {evt.status === 'active' && !isSoldOut && <div className="event-badge">ON SALE</div>}
+                  {isSoldOut && <div className="event-badge" style={{background: '#888'}}>SOLD OUT</div>}
                 </div>
                 <div className="event-details">
                   <h3>{evt.title}</h3>
@@ -68,14 +73,14 @@ export default function EventsGrid() {
                   
                   <button 
                     className="btn-primary full-width" 
-                    disabled={evt.status === 'disabled' || evt.status === 'archived'}
+                    disabled={isDisabled}
                     onClick={() => handleBuyClick(evt)}
                   >
-                    {evt.status === 'disabled' || evt.status === 'archived' ? 'AGOTADO' : 'COMPRAR ENTRADAS'}
+                    {isSoldOut ? 'SOLD OUT' : (evt.status === 'disabled' || evt.status === 'archived' ? 'AGOTADO' : 'COMPRAR ENTRADAS')}
                   </button>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
       </section>

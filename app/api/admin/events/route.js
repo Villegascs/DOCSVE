@@ -5,7 +5,29 @@ import { db } from '@/lib/firebase-admin';
 export async function GET() {
   try {
     const snapshot = await db.collection('events').orderBy('date', 'desc').get();
-    const events = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Get approved tickets to calculate sold amount
+    const ticketsSnapshot = await db.collection('tickets').where('status', '==', 'approved').get();
+    const tickets = ticketsSnapshot.docs.map(doc => doc.data());
+
+    const events = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const eventId = doc.id;
+      
+      const soldTickets = tickets.reduce((total, ticket) => {
+        if (ticket.event_id === eventId) {
+          return total + (Number(ticket.ticket_count) || 1);
+        }
+        return total;
+      }, 0);
+
+      return { 
+        id: eventId, 
+        soldTickets,
+        ...data 
+      };
+    });
+
     return NextResponse.json({ success: true, events });
   } catch (error) {
     console.error('Error fetching events:', error);
@@ -16,7 +38,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, date, location, description, image_url, status, isMainEvent } = body;
+    const { title, date, location, description, image_url, status, isMainEvent, ticketLimit } = body;
 
     // Si es el evento principal, actualizar los demas a false
     if (isMainEvent) {
@@ -36,6 +58,7 @@ export async function POST(request) {
       image_url: image_url || '/Multimedia/photo_2026-05-21_17-54-29.jpg', // Fallback temporal
       status: status || 'active',
       isMainEvent: !!isMainEvent,
+      ticketLimit: Number(ticketLimit) || 0,
       created_at: new Date().toISOString()
     };
 
@@ -51,7 +74,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, date, location, description, image_url, status, isMainEvent } = body;
+    const { id, title, date, location, description, image_url, status, isMainEvent, ticketLimit } = body;
 
     if (!id) throw new Error('ID is required');
 
@@ -67,7 +90,8 @@ export async function PUT(request) {
     }
 
     const updateData = {
-      title, date, location, description, status, isMainEvent: !!isMainEvent
+      title, date, location, description, status, isMainEvent: !!isMainEvent,
+      ticketLimit: Number(ticketLimit) || 0
     };
     if (image_url) updateData.image_url = image_url;
 

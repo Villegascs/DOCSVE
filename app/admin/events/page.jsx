@@ -13,7 +13,9 @@ export default function AdminEvents() {
     location: '',
     description: '',
     status: 'active',
-    isMainEvent: false
+    isMainEvent: false,
+    image_url: '',
+    ticketLimit: 0
   });
 
   useEffect(() => {
@@ -39,7 +41,7 @@ export default function AdminEvents() {
       setFormData(event);
     } else {
       setFormData({
-        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false
+        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0
       });
     }
     setShowModal(true);
@@ -98,6 +100,7 @@ export default function AdminEvents() {
                 <th>Locación</th>
                 <th>Estado</th>
                 <th>Principal</th>
+                <th>Entradas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
@@ -119,6 +122,9 @@ export default function AdminEvents() {
                   </td>
                   <td>
                     {event.isMainEvent ? <strong style={{color: 'var(--primary-neon)'}}>★ Sí</strong> : <span style={{color: '#555'}}>No</span>}
+                  </td>
+                  <td>
+                    {event.soldTickets || 0} / {event.ticketLimit || '∞'}
                   </td>
                   <td>
                     <button className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem'}} onClick={() => openModal(event)}>Editar</button>
@@ -152,6 +158,17 @@ export default function AdminEvents() {
               <div className="form-group">
                 <label>Locación</label>
                 <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} placeholder="Ej: Quinta Bar, Caracas" />
+              </div>
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>Límite de Entradas</label>
+                  <input type="number" required min="0" value={formData.ticketLimit || ''} onChange={e => setFormData({...formData, ticketLimit: e.target.value})} placeholder="Ej: 200 (0 para ilimitado)" />
+                </div>
+                <div className="form-group">
+                  <label>URL de Imagen Personalizada</label>
+                  <input type="text" value={formData.image_url || ''} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="Ej: https://imgur.com/imagen.jpg" />
+                </div>
               </div>
 
               <div className="form-group">

@@ -8,7 +8,7 @@ export async function GET(req) {
     const url = new URL(req.url);
     const eventId = url.searchParams.get('eventId');
     
-    let query = db.collection('tickets').orderBy('created_at', 'desc');
+    let query = db.collection('tickets');
     if (eventId && eventId !== 'all') {
       query = query.where('event_id', '==', eventId);
     }
@@ -16,6 +16,13 @@ export async function GET(req) {
     const snapshot = await query.get();
     const tickets = [];
     snapshot.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+
+    // Sort in memory
+    tickets.sort((a, b) => {
+      const tA = a.created_at?._seconds || 0;
+      const tB = b.created_at?._seconds || 0;
+      return tB - tA;
+    });
 
     const csv = convertTicketsToCSV(tickets);
 

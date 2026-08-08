@@ -208,12 +208,20 @@ async function handleExport(eventId, chatId, callbackQueryId, type) {
     let filename = '';
 
     if (type === 'tickets') {
-      let query = db.collection('tickets').orderBy('created_at', 'desc');
+      let query = db.collection('tickets');
       if (eventId !== 'all') query = query.where('event_id', '==', eventId);
       
       const snap = await query.get();
-      const tickets = [];
+      let tickets = [];
       snap.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+      
+      // Sort in memory to avoid composite index requirement
+      tickets.sort((a, b) => {
+        const tA = a.created_at?._seconds || 0;
+        const tB = b.created_at?._seconds || 0;
+        return tB - tA;
+      });
+      
       csv = convertTicketsToCSV(tickets);
       filename = `ventas_${eventId}.csv`;
     } else {

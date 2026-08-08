@@ -3,9 +3,14 @@ import { useState, useEffect } from 'react';
 
 export default function PurchaseModal({ event, onClose }) {
   const [ticketCount, setTicketCount] = useState(1);
-  const [selectedTicketType, setSelectedTicketType] = useState(
-    event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0] : null
-  );
+  const [selectedTicketType, setSelectedTicketType] = useState(() => {
+    if (event.ticketTypes && event.ticketTypes.length > 0) {
+      // Default to first available ticket type
+      const availableType = event.ticketTypes.find(t => !t.limit || (event.soldTicketsByType && (event.soldTicketsByType[t.name] || 0) < t.limit));
+      return availableType || event.ticketTypes[0];
+    }
+    return null;
+  });
   const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -71,7 +76,7 @@ export default function PurchaseModal({ event, onClose }) {
       setSuccess(true);
     } catch (error) {
       console.error(error);
-      alert('Error de conexión con el servidor.');
+      alert('Error: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -91,26 +96,32 @@ export default function PurchaseModal({ event, onClose }) {
               <div className="ticket-types-container" style={{marginBottom: '2rem'}}>
                 <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Selecciona el Tipo de Entrada:</h4>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
-                  {event.ticketTypes.map((type, index) => (
+                  {event.ticketTypes.map((type, index) => {
+                    const isSoldOut = type.limit > 0 && event.soldTicketsByType && (event.soldTicketsByType[type.name] || 0) >= type.limit;
+                    return (
                     <label key={index} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
                       background: selectedTicketType?.name === type.name ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
                       padding: '1rem 1.5rem', borderRadius: '8px', border: `1px solid ${selectedTicketType?.name === type.name ? 'var(--primary-neon)' : '#222'}`,
-                      cursor: 'pointer', transition: 'all 0.2s'
+                      cursor: isSoldOut ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                      opacity: isSoldOut ? 0.5 : 1
                     }}>
                       <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
                         <input 
                           type="radio" 
                           name="ticketTypeSelection" 
                           checked={selectedTicketType?.name === type.name}
-                          onChange={() => setSelectedTicketType(type)}
-                          style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem'}}
+                          onChange={() => { if (!isSoldOut) setSelectedTicketType(type); }}
+                          disabled={isSoldOut}
+                          style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem', cursor: isSoldOut ? 'not-allowed' : 'pointer'}}
                         />
-                        <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>{type.name}</span>
+                        <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>
+                          {type.name} {isSoldOut && <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>}
+                        </span>
                       </div>
                       <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
                     </label>
-                  ))}
+                  )})}
                 </div>
               </div>
             )}

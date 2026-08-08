@@ -14,16 +14,25 @@ export async function GET() {
       const data = doc.data();
       const eventId = doc.id;
       
+      const soldTicketsByType = {};
+      
       const soldTickets = tickets.reduce((total, ticket) => {
         if (ticket.event_id === eventId) {
-          return total + (Number(ticket.ticket_count) || 1);
+          const type = ticket.ticket_type || 'Entrada General';
+          const count = Number(ticket.ticket_count) || 1;
+          soldTicketsByType[type] = (soldTicketsByType[type] || 0) + count;
+          return total + count;
         }
         return total;
       }, 0);
 
+      const isSoldOut = data.ticketLimit > 0 && soldTickets >= data.ticketLimit;
+
       return { 
         id: eventId, 
         soldTickets,
+        soldTicketsByType,
+        isSoldOut,
         ...data 
       };
     });

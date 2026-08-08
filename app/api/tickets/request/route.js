@@ -28,6 +28,33 @@ export async function POST(req) {
     const arrayBuffer = await receiptFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    // Validate Event Capacity
+    const eventDoc = await db.collection('events').doc(eventId).get();
+    if (eventDoc.exists) {
+      const eventData = eventDoc.data();
+      const ticketTypeConfig = eventData.ticketTypes?.find(t => t.name === ticketTypeName);
+      
+      if (ticketTypeConfig && ticketTypeConfig.limit > 0) {
+        // Calculate sold tickets for this type
+        const ticketsSnap = await db.collection('tickets')
+          .where('event_id', '==', eventId)
+          .where('status', '==', 'approved')
+          .get();
+          
+        let soldForType = 0;
+        ticketsSnap.forEach(tDoc => {
+          const tData = tDoc.data();
+          if ((tData.ticket_type || 'Entrada General') === ticketTypeName) {
+            soldForType += (Number(tData.ticket_count) || 1);
+          }
+        });
+
+        if (soldForType + ticketCount > ticketTypeConfig.limit) {
+          return NextResponse.json({ error: `La entrada "${ticketTypeName}" está agotada o no hay suficientes cupos disponibles.` }, { status: 400 });
+        }
+      }
+    }
+
     // Save ticket to Firestore
     const ticketRef = await db.collection('tickets').add({
       name, email, cedula, phone, bank, ref,

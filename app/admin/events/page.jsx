@@ -121,7 +121,7 @@ export default function AdminEvents() {
   const addTicketType = () => {
     setFormData({
       ...formData,
-      ticketTypes: [...(formData.ticketTypes || []), { name: '', price: 0 }]
+      ticketTypes: [...(formData.ticketTypes || []), { name: '', price: 0, limit: 0 }]
     });
   };
 
@@ -298,6 +298,9 @@ export default function AdminEvents() {
                       </div>
                       <div style={{flex: 1}}>
                         <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={type.price} onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <input type="number" min="0" placeholder="Límite (0=∞)" required value={type.limit || 0} onChange={(e) => updateTicketType(index, 'limit', Number(e.target.value))} />
                       </div>
                       <button type="button" onClick={() => removeTicketType(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
                     </div>

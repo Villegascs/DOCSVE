@@ -85,31 +85,52 @@ export default function AdminEvents() {
     }
   };
 
-  const handleImageUpload = async (e) => {
+  const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploadingImage(true);
-    const data = new FormData();
-    data.append('file', file);
 
-    try {
-      const res = await fetch('/api/admin/upload', {
-        method: 'POST',
-        body: data,
-      });
-      const result = await res.json();
-      if (result.success) {
-        setFormData({ ...formData, image_url: result.url });
-      } else {
-        alert('Error subiendo imagen: ' + result.error);
-      }
-    } catch (error) {
-      console.error(error);
-      alert('Error de conexión subiendo la imagen');
-    } finally {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Redimensionar y comprimir usando un canvas
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 800;
+        const MAX_HEIGHT = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convertir a base64 con calidad JPEG 0.7 (bastante ligero)
+        const base64String = canvas.toDataURL('image/jpeg', 0.7);
+        setFormData({ ...formData, image_url: base64String });
+        setUploadingImage(false);
+      };
+      img.src = event.target.result;
+    };
+    reader.onerror = () => {
+      alert('Error leyendo el archivo');
       setUploadingImage(false);
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (

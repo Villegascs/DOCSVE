@@ -118,6 +118,7 @@ export default function AdminSettings() {
             <thead>
               <tr>
                 <th>Clave</th>
+                <th>Usuarios Registrados</th>
                 <th style={{textAlign: 'right'}}>Acciones</th>
               </tr>
             </thead>
@@ -127,6 +128,11 @@ export default function AdminSettings() {
               ) : keys.map(k => (
                 <tr key={k.id}>
                   <td style={{fontFamily: 'monospace', fontSize: '1.2rem'}}>{k.key}</td>
+                  <td>
+                    {k.active_users && k.active_users.length > 0 
+                      ? k.active_users.map(u => <span key={u} style={{display: 'inline-block', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.5rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.9rem'}}>{u}</span>) 
+                      : <span style={{color: '#888'}}>Ninguno</span>}
+                  </td>
                   <td style={{textAlign: 'right'}}>
                     <button className="btn-secondary" style={{color: '#ff4444', borderColor: '#ff4444', padding: '0.4rem 0.8rem'}} onClick={() => handleDeleteKey(k.id)}>Eliminar</button>
                   </td>

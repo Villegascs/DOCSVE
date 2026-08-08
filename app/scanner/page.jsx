@@ -36,7 +36,7 @@ export default function AdminScanner() {
       const res = await fetch('/api/scanner/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key: authKey })
+        body: JSON.stringify({ key: authKey, name: authName })
       });
       const data = await res.json();
       

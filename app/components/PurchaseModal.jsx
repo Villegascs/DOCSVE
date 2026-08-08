@@ -48,21 +48,71 @@ export default function PurchaseModal({ event, onClose }) {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const compressImage = (file, maxWidth = 1000, quality = 0.7) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          if (width > maxWidth) {
+            height = Math.round(height * (maxWidth / width));
+            width = maxWidth;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg', lastModified: Date.now() }));
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', quality);
+        };
+        img.onerror = () => resolve(file);
+      };
+      reader.onerror = () => resolve(file);
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.target);
-    formData.append('ticketCount', ticketCount);
-    formData.append('totalBs', totalBs);
-    formData.append('totalEur', grandTotalEUR);
-    formData.append('eventId', event.id);
-    formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
-    if (selectedDrinkPacks.length > 0) {
-      formData.append('drinkPacks', selectedDrinkPacks.join(', '));
-    }
-
     try {
+      const formData = new FormData(e.target);
+      
+      const fileInput = e.target.querySelector('input[type="file"]');
+      if (fileInput && fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        if (file.size > 2 * 1024 * 1024) { // Si es mayor a 2MB, comprimir
+          try {
+            const compressedFile = await compressImage(file, 1000, 0.7);
+            formData.set('receipt', compressedFile);
+          } catch(err) {
+            console.error("Error al comprimir:", err);
+          }
+        }
+      }
+
+      formData.append('ticketCount', ticketCount);
+      formData.append('totalBs', totalBs);
+      formData.append('totalEur', grandTotalEUR);
+      formData.append('eventId', event.id);
+      formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
+      if (selectedDrinkPacks.length > 0) {
+        formData.append('drinkPacks', selectedDrinkPacks.join(', '));
+      }
+
       const response = await fetch('/api/tickets/request', {
         method: 'POST',
         body: formData

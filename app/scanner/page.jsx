@@ -88,6 +88,7 @@ export default function AdminScanner() {
   const handleManualScan = (e) => {
     e.preventDefault();
     if (!uuidInput) return;
+    if (scannerRef.current && isScanning) scannerRef.current.pause(true);
     processScan(uuidInput);
     setUuidInput('');
   };
@@ -108,11 +109,7 @@ export default function AdminScanner() {
         (decodedText) => {
           // Pause scanning to prevent multiple triggers
           scannerRef.current.pause(true);
-          processScan(decodedText).then(() => {
-            setTimeout(() => {
-              if (scannerRef.current) scannerRef.current.resume();
-            }, 3000);
-          });
+          processScan(decodedText);
         },
         (error) => {
           // Ignorar errores de "no se detecta código"
@@ -127,6 +124,13 @@ export default function AdminScanner() {
       }
     };
   }, [isScanning]);
+
+  const closeResultOverlay = () => {
+    setScanResult(null);
+    if (scannerRef.current && isScanning) {
+      scannerRef.current.resume();
+    }
+  };
 
   if (authLoading) return <div style={{padding: '2rem', textAlign: 'center'}}>Cargando...</div>;
 
@@ -170,6 +174,43 @@ export default function AdminScanner() {
 
   return (
     <>
+      {/* Full screen scan result overlay */}
+      {scanResult && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+          background: scanResult.valid ? '#10b981' : '#ef4444',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, padding: '2rem', textAlign: 'center'
+        }}>
+          <h2 style={{
+            color: 'white', 
+            fontSize: scanResult.valid ? '2.5rem' : '2rem', 
+            whiteSpace: 'pre-line', 
+            fontWeight: 'bold', 
+            margin: 0, 
+            marginBottom: '3rem'
+          }}>
+            {scanResult.message}
+          </h2>
+          <button 
+            onClick={closeResultOverlay}
+            style={{
+              padding: '1.2rem 3rem', 
+              fontSize: '1.2rem', 
+              fontWeight: 'bold', 
+              borderRadius: '50px', 
+              border: 'none', 
+              background: 'white', 
+              color: scanResult.valid ? '#10b981' : '#ef4444', 
+              cursor: 'pointer',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.2)'
+            }}
+          >
+            Siguiente Entrada
+          </button>
+        </div>
+      )}
+
       <div className="admin-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', padding: '1rem'}}>
         <h1 className="admin-title">Escáner Web (Seguridad)</h1>
         <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
@@ -228,26 +269,6 @@ export default function AdminScanner() {
             </div>
             <button type="submit" className="btn-secondary full-width">Verificar</button>
           </form>
-
-          {scanResult && (
-            <div style={{
-              marginTop: '2rem',
-              padding: '2rem',
-              borderRadius: '8px',
-              background: scanResult.valid ? '#10b98120' : '#ef444420',
-              border: `2px solid ${scanResult.valid ? '#34d399' : '#f87171'}`,
-              textAlign: 'center'
-            }}>
-              <h2 style={{
-                color: scanResult.valid ? '#34d399' : '#f87171', 
-                whiteSpace: 'pre-line',
-                fontSize: '1.5rem',
-                margin: 0
-              }}>
-                {scanResult.message}
-              </h2>
-            </div>
-          )}
         </div>
       </div>
     </>

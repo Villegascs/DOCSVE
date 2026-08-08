@@ -5,6 +5,8 @@ export default function AdminEvents() {
   const [showModal, setShowModal] = useState(false);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [eventToDelete, setEventToDelete] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
   
   const [formData, setFormData] = useState({
     id: null,
@@ -71,10 +73,42 @@ export default function AdminEvents() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (confirm('¿Estás seguro de eliminar este evento?')) {
-      await fetch(`/api/admin/events?id=${id}`, { method: 'DELETE' });
+  const handleDeleteClick = (id) => {
+    setEventToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (eventToDelete) {
+      await fetch(`/api/admin/events?id=${eventToDelete}`, { method: 'DELETE' });
+      setEventToDelete(null);
       fetchEvents();
+    }
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const data = new FormData();
+    data.append('file', file);
+
+    try {
+      const res = await fetch('/api/admin/upload', {
+        method: 'POST',
+        body: data,
+      });
+      const result = await res.json();
+      if (result.success) {
+        setFormData({ ...formData, image_url: result.url });
+      } else {
+        alert('Error subiendo imagen: ' + result.error);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error de conexión subiendo la imagen');
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -128,7 +162,7 @@ export default function AdminEvents() {
                   </td>
                   <td>
                     <button className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem', marginRight: '0.5rem'}} onClick={() => openModal(event)}>Editar</button>
-                    <button className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: '#ff4444', borderColor: '#ff4444'}} onClick={() => handleDelete(event.id)}>Borrar</button>
+                    <button className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem', color: '#ff4444', borderColor: '#ff4444'}} onClick={() => handleDeleteClick(event.id)}>Borrar</button>
                   </td>
                 </tr>
               ))}
@@ -166,8 +200,15 @@ export default function AdminEvents() {
                   <input type="number" required min="0" value={formData.ticketLimit || ''} onChange={e => setFormData({...formData, ticketLimit: e.target.value})} placeholder="Ej: 200 (0 para ilimitado)" />
                 </div>
                 <div className="form-group">
-                  <label>URL de Imagen Personalizada</label>
-                  <input type="text" value={formData.image_url || ''} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="Ej: https://imgur.com/imagen.jpg" />
+                  <label>Imagen del Evento (Sube desde tu galería)</label>
+                  <input type="file" accept="image/*" onChange={handleImageUpload} style={{padding: '0.5rem'}} />
+                  {uploadingImage && <span style={{fontSize: '0.8rem', color: 'var(--primary-neon)'}}>Subiendo imagen...</span>}
+                  {formData.image_url && (
+                    <div style={{marginTop: '0.5rem'}}>
+                      <p style={{fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem'}}>Vista previa:</p>
+                      <img src={formData.image_url} alt="Preview" style={{width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #333'}} />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -192,6 +233,19 @@ export default function AdminEvents() {
 
               <button type="submit" className="btn-primary" style={{marginTop: '1rem'}}>{formData.id ? 'ACTUALIZAR EVENTO' : 'GUARDAR EVENTO'}</button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {eventToDelete && (
+        <div className="modal active" onClick={(e) => { if (e.target.className.includes('modal active')) setEventToDelete(null); }}>
+          <div className="modal-content admin-form" style={{maxWidth: '400px', textAlign: 'center'}}>
+            <h2 style={{color: '#ff4444', marginBottom: '1rem'}}>Eliminar Evento</h2>
+            <p style={{color: '#A0A0A0', marginBottom: '2rem'}}>¿Estás completamente seguro de que deseas eliminar este evento? Esta acción no se puede deshacer.</p>
+            <div style={{display: 'flex', gap: '1rem', justifyContent: 'center'}}>
+              <button className="btn-secondary" onClick={() => setEventToDelete(null)}>Cancelar</button>
+              <button className="btn-primary" style={{backgroundColor: '#ff4444', color: 'white'}} onClick={confirmDelete}>Sí, Eliminar</button>
+            </div>
           </div>
         </div>
       )}

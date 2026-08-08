@@ -36,7 +36,19 @@ export async function POST(req) {
     const ticketData = ticketDoc.data();
 
     if (qrData.status === 'used') {
-      return NextResponse.json({ valid: false, status: 'used', message: `❌ ENTRADA YA USADA\nNombre: ${ticketData.name}` });
+      let timeStr = '';
+      if (qrData.scanned_at) {
+        try {
+          const dateObj = qrData.scanned_at.toDate ? qrData.scanned_at.toDate() : new Date(qrData.scanned_at._seconds * 1000);
+          timeStr = dateObj.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+        } catch(e) {
+          console.error(e);
+        }
+      }
+      const scannedByStr = qrData.scanned_by ? ` por ${qrData.scanned_by}` : '';
+      const timeInfo = timeStr ? `\n\n(Usada a las ${timeStr}${scannedByStr})` : '';
+
+      return NextResponse.json({ valid: false, status: 'used', message: `❌ ENTRADA YA USADA\nNombre: ${ticketData.name}${timeInfo}` });
     }
     
     if (qrData.status === 'archived') {

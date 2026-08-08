@@ -15,6 +15,7 @@ export async function POST(req) {
     const ref = formData.get('ref');
     const ticketCount = parseInt(formData.get('ticketCount'), 10);
     const totalBs = formData.get('totalBs');
+    const totalEur = formData.get('totalEur');
     const eventId = formData.get('eventId') || 'default_event';
     const ticketTypeName = formData.get('ticketTypeName') || 'Entrada General';
     const drinkPacks = formData.get('drinkPacks') || '';
@@ -34,6 +35,7 @@ export async function POST(req) {
       ticket_type: ticketTypeName,
       drink_packs: drinkPacks,
       total_bs: totalBs,
+      total_eur: parseFloat(totalEur) || 0,
       event_id: eventId,
       status: 'pending',
       created_at: new Date()

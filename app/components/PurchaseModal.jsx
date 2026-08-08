@@ -50,6 +50,7 @@ export default function PurchaseModal({ event, onClose }) {
     const formData = new FormData(e.target);
     formData.append('ticketCount', ticketCount);
     formData.append('totalBs', totalBs);
+    formData.append('totalEur', grandTotalEUR);
     formData.append('eventId', event.id);
     formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
     if (selectedDrinkPacks.length > 0) {

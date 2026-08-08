@@ -61,8 +61,10 @@ export default function AdminDashboard() {
           <div className="value">{data.stats.totalTickets}</div>
         </div>
         <div className="stat-card">
-          <h3>Ingresos Estimados (Bs)</h3>
-          <div className="value">Bs {data.stats.totalBs.toLocaleString('es-VE')}</div>
+          <h3>Ingresos Estimados</h3>
+          <div className="value">
+            €{data.stats.totalEur ? data.stats.totalEur.toFixed(2) : '0.00'} <span style={{fontSize: '0.6em', color: '#888'}}>| Bs {data.stats.totalBs ? data.stats.totalBs.toLocaleString('es-VE') : '0'}</span>
+          </div>
         </div>
         <div className="stat-card">
           <h3>Pagos Pendientes</h3>

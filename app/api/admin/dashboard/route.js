@@ -9,6 +9,7 @@ export async function GET() {
 
     let totalTickets = 0;
     let totalBs = 0;
+    let totalEur = 0;
     let pendingPayments = 0;
     let scannedTickets = 0;
     const latestPayments = [];
@@ -22,6 +23,7 @@ export async function GET() {
       if (data.status === 'approved') {
         totalTickets += count;
         totalBs += amount;
+        totalEur += (parseFloat(data.total_eur) || 0);
       } else if (data.status === 'pending') {
         pendingPayments++;
       }
@@ -54,6 +56,7 @@ export async function GET() {
       stats: {
         totalTickets,
         totalBs,
+        totalEur,
         pendingPayments,
         scannedTickets
       },

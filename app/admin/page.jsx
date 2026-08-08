@@ -98,7 +98,10 @@ export default function AdminDashboard() {
               data.latestPayments.map(payment => (
                 <tr key={payment.id}>
                   <td>{payment.name}</td>
-                  <td>{payment.ticket_count}x {payment.ticket_type || 'General'}</td>
+                  <td>
+                    {payment.ticket_count}x {payment.ticket_type || 'General'}
+                    {payment.drink_packs && <div style={{fontSize: '0.75rem', color: '#a855f7'}}>🍾 {payment.drink_packs}</div>}
+                  </td>
                   <td>{payment.bank} - {payment.ref}</td>
                   <td>{formatTimeAgo(payment.created_at)}</td>
                   <td>{getStatusBadge(payment.status)}</td>

@@ -17,6 +17,7 @@ export async function POST(req) {
     const totalBs = formData.get('totalBs');
     const eventId = formData.get('eventId') || 'default_event';
     const ticketTypeName = formData.get('ticketTypeName') || 'Entrada General';
+    const drinkPacks = formData.get('drinkPacks') || '';
     const receiptFile = formData.get('receipt');
 
     if (!receiptFile || typeof receiptFile === 'string') {
@@ -31,6 +32,7 @@ export async function POST(req) {
       name, email, cedula, phone, bank, ref,
       ticket_count: ticketCount,
       ticket_type: ticketTypeName,
+      drink_packs: drinkPacks,
       total_bs: totalBs,
       event_id: eventId,
       status: 'pending',
@@ -41,7 +43,8 @@ export async function POST(req) {
 
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {
-      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}x ${ticketTypeName}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
+      const drinkPacksText = drinkPacks ? `\n🍾 <b>Combos</b>: ${drinkPacks}` : '';
+      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}x ${ticketTypeName}${drinkPacksText}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
 
       for (const chatId of adminChatIds) {
         try {

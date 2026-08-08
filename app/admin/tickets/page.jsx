@@ -102,7 +102,10 @@ export default function AdminTickets() {
                     <tr key={ticket.id}>
                       <td>{ticket.name}</td>
                       <td>{ticket.cedula}</td>
-                      <td>{ticket.ticket_count}x {ticket.ticket_type || 'General'}</td>
+                      <td>
+                        {ticket.ticket_count}x {ticket.ticket_type || 'General'}
+                        {ticket.drink_packs && <div style={{fontSize: '0.75rem', color: '#a855f7'}}>🍾 {ticket.drink_packs}</div>}
+                      </td>
                       <td>
                         <span style={{color: scannedCount > 0 ? '#34d399' : '#888'}}>
                           {scannedCount} / {ticket.ticket_count}

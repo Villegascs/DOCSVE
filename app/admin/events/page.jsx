@@ -18,7 +18,8 @@ export default function AdminEvents() {
     isMainEvent: false,
     image_url: '',
     ticketLimit: 0,
-    ticketTypes: []
+    ticketTypes: [],
+    drinkPacks: []
   });
 
   useEffect(() => {
@@ -43,11 +44,12 @@ export default function AdminEvents() {
     if (event) {
       setFormData({
         ...event,
-        ticketTypes: event.ticketTypes || []
+        ticketTypes: event.ticketTypes || [],
+        drinkPacks: event.drinkPacks || []
       });
     } else {
       setFormData({
-        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0, ticketTypes: []
+        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0, ticketTypes: [], drinkPacks: []
       });
     }
     setShowModal(true);
@@ -133,6 +135,25 @@ export default function AdminEvents() {
     const newTypes = [...formData.ticketTypes];
     newTypes[index][field] = value;
     setFormData({ ...formData, ticketTypes: newTypes });
+  };
+
+  const addDrinkPack = () => {
+    setFormData({
+      ...formData,
+      drinkPacks: [...(formData.drinkPacks || []), { name: '', price: 0 }]
+    });
+  };
+
+  const removeDrinkPack = (index) => {
+    const newPacks = [...formData.drinkPacks];
+    newPacks.splice(index, 1);
+    setFormData({ ...formData, drinkPacks: newPacks });
+  };
+
+  const updateDrinkPack = (index, field, value) => {
+    const newPacks = [...formData.drinkPacks];
+    newPacks[index][field] = value;
+    setFormData({ ...formData, drinkPacks: newPacks });
   };
 
   return (
@@ -279,6 +300,30 @@ export default function AdminEvents() {
                         <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={type.price} onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} />
                       </div>
                       <button type="button" onClick={() => removeTicketType(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Dynamic Drink Packs Section */}
+              <div className="form-group" style={{marginTop: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3 style={{fontSize: '1.1rem', margin: 0, color: 'var(--primary-neon)'}}>Combos de Bebidas (Drink Packs)</h3>
+                  <button type="button" onClick={addDrinkPack} className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem'}}>+ Añadir Combo</button>
+                </div>
+                
+                {(!formData.drinkPacks || formData.drinkPacks.length === 0) ? (
+                  <p style={{fontSize: '0.9rem', color: '#888'}}>Sin combos configurados para este evento.</p>
+                ) : (
+                  formData.drinkPacks.map((pack, index) => (
+                    <div key={index} style={{display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-start'}}>
+                      <div style={{flex: 2}}>
+                        <input type="text" placeholder="Nombre (Ej: 3 Waters)" required value={pack.name} onChange={(e) => updateDrinkPack(index, 'name', e.target.value)} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={pack.price} onChange={(e) => updateDrinkPack(index, 'price', Number(e.target.value))} />
+                      </div>
+                      <button type="button" onClick={() => removeDrinkPack(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
                     </div>
                   ))
                 )}

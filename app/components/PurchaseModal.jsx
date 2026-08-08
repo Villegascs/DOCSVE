@@ -6,6 +6,7 @@ export default function PurchaseModal({ event, onClose }) {
   const [selectedTicketType, setSelectedTicketType] = useState(
     event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0] : null
   );
+  const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
@@ -27,7 +28,14 @@ export default function PurchaseModal({ event, onClose }) {
   }, []);
 
   const ticketPriceEUR = selectedTicketType ? selectedTicketType.price : 3; // Fallback a 3 EUR si no hay tipos
-  const totalBs = currentRateEUR > 0 ? (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2) : 'Cargando...';
+  
+  const drinkPacksTotal = selectedDrinkPacks.reduce((total, packName) => {
+    const pack = event.drinkPacks?.find(p => p.name === packName);
+    return total + (pack ? pack.price : 0);
+  }, 0);
+
+  const grandTotalEUR = (ticketPriceEUR * ticketCount) + drinkPacksTotal;
+  const totalBs = currentRateEUR > 0 ? (currentRateEUR * grandTotalEUR).toFixed(2) : 'Cargando...';
 
   const copyText = (text, key) => {
     navigator.clipboard.writeText(text);
@@ -44,6 +52,9 @@ export default function PurchaseModal({ event, onClose }) {
     formData.append('totalBs', totalBs);
     formData.append('eventId', event.id);
     formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
+    if (selectedDrinkPacks.length > 0) {
+      formData.append('drinkPacks', selectedDrinkPacks.join(', '));
+    }
 
     try {
       const response = await fetch('/api/tickets/request', {
@@ -99,6 +110,42 @@ export default function PurchaseModal({ event, onClose }) {
                       <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
                     </label>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {event.drinkPacks && event.drinkPacks.length > 0 && (
+              <div className="ticket-types-container" style={{marginBottom: '2rem'}}>
+                <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Combos de Bebidas (Opcional):</h4>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
+                  {event.drinkPacks.map((pack, index) => {
+                    const isSelected = selectedDrinkPacks.includes(pack.name);
+                    return (
+                      <label key={index} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                        background: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
+                        padding: '1rem 1.5rem', borderRadius: '8px', border: `1px solid ${isSelected ? 'var(--primary-neon)' : '#222'}`,
+                        cursor: 'pointer', transition: 'all 0.2s'
+                      }}>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                          <input 
+                            type="checkbox" 
+                            checked={isSelected}
+                            onChange={() => {
+                              if (isSelected) {
+                                setSelectedDrinkPacks(selectedDrinkPacks.filter(name => name !== pack.name));
+                              } else {
+                                setSelectedDrinkPacks([...selectedDrinkPacks, pack.name]);
+                              }
+                            }}
+                            style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem'}}
+                          />
+                          <span style={{fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? 'white' : '#ccc'}}>{pack.name}</span>
+                        </div>
+                        <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{pack.price}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             )}

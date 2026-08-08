@@ -33,6 +33,7 @@ export async function GET() {
           name: data.name,
           ticket_count: count,
           ticket_type: data.ticket_type || 'General',
+          drink_packs: data.drink_packs || '',
           bank: data.bank,
           ref: data.ref,
           status: data.status,

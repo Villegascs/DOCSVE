@@ -40,7 +40,12 @@ export async function POST(req) {
       if (qrData.scanned_at) {
         try {
           const dateObj = qrData.scanned_at.toDate ? qrData.scanned_at.toDate() : new Date(qrData.scanned_at._seconds * 1000);
-          timeStr = dateObj.toLocaleTimeString('es-VE', { hour: '2-digit', minute: '2-digit', hour12: true });
+          timeStr = dateObj.toLocaleTimeString('es-VE', { 
+            timeZone: 'America/Caracas',
+            hour: '2-digit', 
+            minute: '2-digit', 
+            hour12: true 
+          });
         } catch(e) {
           console.error(e);
         }

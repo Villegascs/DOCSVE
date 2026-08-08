@@ -32,7 +32,7 @@ export default function Countdown({ targetDate }) {
   }, [targetDate]);
 
   return (
-    <div className="countdown-container" style={{ display: 'flex', gap: '1rem', justifyContent: 'center', margin: '2rem 0' }}>
+    <div className="countdown-container" style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'center', margin: '2rem 0' }}>
       <div className="countdown-item" style={{ background: 'rgba(17,17,17,0.7)', backdropFilter: 'blur(12px)', padding: '1rem', borderRadius: '8px', minWidth: '80px', border: '1px solid rgba(255,255,255,0.1)' }}>
         <div style={{ fontSize: '2.5rem', fontWeight: '900', fontFamily: 'var(--font-heading)', color: 'var(--primary-neon)' }}>{timeLeft.days}</div>
         <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)' }}>Días</div>

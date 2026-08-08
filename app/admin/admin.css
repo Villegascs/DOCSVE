@@ -89,7 +89,8 @@
   background: var(--bg-panel);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow-x: auto; /* Responsive tables */
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-table {
@@ -156,4 +157,95 @@
 /* Formularios Admin */
 .admin-form .form-group {
   margin-bottom: 1.5rem;
+}
+
+/* ================= Responsive Admin ================= */
+@media (max-width: 900px) {
+  .admin-container {
+    flex-direction: column;
+  }
+  
+  .admin-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    flex-direction: row;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+  }
+  
+  .admin-logo {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    margin-right: 1rem;
+  }
+  
+  .admin-logo h2 {
+    font-size: 1.2rem;
+  }
+  
+  .admin-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .admin-nav::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .admin-nav-link {
+    white-space: nowrap;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+    width: auto;
+  }
+  
+  .admin-logout {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .admin-main {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .admin-header button {
+    width: 100%;
+  }
+
+  .admin-title {
+    font-size: 1.5rem;
+  }
+
+  .admin-table th, .admin-table td {
+    padding: 0.8rem 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .admin-form .form-group input,
+  .admin-form .form-group select,
+  .admin-form .form-group textarea {
+    font-size: 1rem; /* Prevent iOS zoom */
+  }
 }

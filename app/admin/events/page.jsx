@@ -97,8 +97,8 @@ export default function AdminEvents() {
       img.onload = () => {
         // Redimensionar y comprimir usando un canvas
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 800;
-        const MAX_HEIGHT = 800;
+        const MAX_WIDTH = 1600; // Calidad HD
+        const MAX_HEIGHT = 1600;
         let width = img.width;
         let height = img.height;
 
@@ -119,8 +119,8 @@ export default function AdminEvents() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convertir a base64 con calidad JPEG 0.7 (bastante ligero)
-        const base64String = canvas.toDataURL('image/jpeg', 0.7);
+        // Convertir a base64 con calidad casi máxima (0.95)
+        const base64String = canvas.toDataURL('image/jpeg', 0.95);
         setFormData({ ...formData, image_url: base64String });
         setUploadingImage(false);
       };
@@ -223,7 +223,13 @@ export default function AdminEvents() {
                 <div className="form-group">
                   <label>Imagen del Evento (Sube desde tu galería)</label>
                   <input type="file" accept="image/*" onChange={handleImageUpload} style={{padding: '0.5rem'}} />
-                  {uploadingImage && <span style={{fontSize: '0.8rem', color: 'var(--primary-neon)'}}>Subiendo imagen...</span>}
+                  {uploadingImage && <span style={{fontSize: '0.8rem', color: 'var(--primary-neon)'}}>Procesando imagen HD...</span>}
+                  
+                  <label style={{marginTop: '0.5rem', display: 'block', fontSize: '0.8rem', color: '#666'}}>
+                    Opcional: Si prefieres la máxima calidad sin compresión, pega un enlace directo (URL):
+                  </label>
+                  <input type="text" value={formData.image_url || ''} onChange={e => setFormData({...formData, image_url: e.target.value})} placeholder="Ej: https://imgur.com/foto.jpg" />
+
                   {formData.image_url && (
                     <div style={{marginTop: '0.5rem'}}>
                       <p style={{fontSize: '0.8rem', color: '#888', marginBottom: '0.5rem'}}>Vista previa:</p>

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
 import path from 'path';
+import { convertTicketsToCSV, convertScannedToCSV } from '@/lib/csvUtils';
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 async function sendTgMessage(chatId, text, options = {}) {
@@ -58,6 +59,34 @@ export async function POST(req) {
         await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
       } else if (action === 'reject') {
         await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
+      } else if (action === 'expVentas') {
+        await handleExport(id, chatId, callbackQueryId, 'tickets');
+      } else if (action === 'expScan') {
+        await handleExport(id, chatId, callbackQueryId, 'scanned');
+      }
+    } else if (body.message && body.message.text && token) {
+      const chatId = body.message.chat.id.toString();
+      const adminChats = (process.env.TELEGRAM_ADMIN_CHAT_ID || '').split(',').map(id => id.trim());
+      
+      // Restrict commands to admin chat IDs (or group where bot is)
+      if (adminChats.includes(chatId)) {
+        const text = body.message.text.trim();
+        
+        if (text === '/ventas' || text === '/escaneadas') {
+          const action = text === '/ventas' ? 'expVentas' : 'expScan';
+          const eventsSnap = await db.collection('events').where('status', '==', 'active').get();
+          
+          const buttons = [];
+          buttons.push([{ text: 'Todos los Eventos', callback_data: `${action}_all` }]);
+          
+          eventsSnap.forEach(doc => {
+            buttons.push([{ text: doc.data().title, callback_data: `${action}_${doc.id}` }]);
+          });
+          
+          await sendTgMessage(chatId, `¿De qué evento deseas exportar ${text === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
+            reply_markup: { inline_keyboard: buttons }
+          });
+        }
       }
     }
 
@@ -168,5 +197,65 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
     await answerTgCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
   } catch (e) {
     console.error("Error en handleReject:", e);
+  }
+}
+
+async function handleExport(eventId, chatId, callbackQueryId, type) {
+  try {
+    await answerTgCallbackQuery(callbackQueryId, { text: "Generando reporte..." });
+    
+    let csv = '';
+    let filename = '';
+
+    if (type === 'tickets') {
+      let query = db.collection('tickets').orderBy('created_at', 'desc');
+      if (eventId !== 'all') query = query.where('event_id', '==', eventId);
+      
+      const snap = await query.get();
+      const tickets = [];
+      snap.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+      csv = convertTicketsToCSV(tickets);
+      filename = `ventas_${eventId}.csv`;
+    } else {
+      let qrs = [];
+      if (eventId !== 'all') {
+        const tSnap = await db.collection('tickets').where('event_id', '==', eventId).get();
+        const tIds = [];
+        tSnap.forEach(d => tIds.push(d.id));
+        if (tIds.length > 0) {
+          const qSnap = await db.collection('qr_codes').where('status', '==', 'used').get();
+          qSnap.forEach(doc => {
+            if (tIds.includes(doc.data().ticket_id)) {
+              const tData = tSnap.docs.find(t => t.id === doc.data().ticket_id)?.data();
+              qrs.push({ id: doc.id, ...doc.data(), ticket_name: tData?.name || 'Desconocido' });
+            }
+          });
+        }
+      } else {
+        const qSnap = await db.collection('qr_codes').where('status', '==', 'used').get();
+        const tSnap = await db.collection('tickets').get();
+        const tMap = {};
+        tSnap.forEach(t => tMap[t.id] = t.data().name);
+        qSnap.forEach(doc => {
+          qrs.push({ id: doc.id, ...doc.data(), ticket_name: tMap[doc.data().ticket_id] || 'Desconocido' });
+        });
+      }
+      csv = convertScannedToCSV(qrs);
+      filename = `escaneadas_${eventId}.csv`;
+    }
+
+    const formData = new FormData();
+    formData.append('chat_id', chatId);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    formData.append('document', blob, filename);
+
+    await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+      method: 'POST',
+      body: formData
+    });
+
+  } catch (e) {
+    console.error("Error en handleExport:", e);
+    await sendTgMessage(chatId, `Error exportando: ${e.message}`);
   }
 }

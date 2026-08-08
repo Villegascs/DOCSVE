@@ -61,6 +61,13 @@ export default function AdminTickets() {
           </div>
 
           <div style={{background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+            <a href={`/api/admin/export/tickets?eventId=${selectedEventId}`} download target="_blank" style={{color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Exportar CSV
+            </a>
+          </div>
+
+          <div style={{background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
             <p style={{fontSize: '0.8rem', color: '#888', margin: 0}}>Total Vendidas</p>
             <p style={{fontSize: '1.2rem', fontWeight: 'bold', margin: 0}}>{totalTickets}</p>
           </div>

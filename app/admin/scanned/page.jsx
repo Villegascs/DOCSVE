@@ -66,12 +66,19 @@ export default function AdminScannedTickets() {
               onChange={(e) => setSelectedEventId(e.target.value)}
               style={{background: 'transparent', border: 'none', color: 'white', outline: 'none', cursor: 'pointer'}}
             >
-              <option value="all">Todos los Eventos</option>
+              <option value="all" style={{background: '#1a1a1a', color: 'white'}}>Todos los Eventos</option>
               {events.map(ev => (
-                <option key={ev.id} value={ev.id}>{ev.title}</option>
+                <option key={ev.id} value={ev.id} style={{background: '#1a1a1a', color: 'white'}}>{ev.title}</option>
               ))}
-              <option value="default_event">Evento por Defecto</option>
+              <option value="default_event" style={{background: '#1a1a1a', color: 'white'}}>Evento por Defecto</option>
             </select>
+          </div>
+
+          <div style={{background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)'}}>
+            <a href={`/api/admin/export/scanned?eventId=${selectedEventId}`} download target="_blank" style={{color: 'white', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Exportar CSV
+            </a>
           </div>
 
           <div style={{background: 'rgba(52, 211, 153, 0.1)', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid rgba(52, 211, 153, 0.2)'}}>

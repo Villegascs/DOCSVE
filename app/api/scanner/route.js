@@ -51,13 +51,18 @@ export async function POST(req) {
         }
       }
       const scannedByStr = qrData.scanned_by ? ` por ${qrData.scanned_by}` : '';
-      const timeInfo = timeStr ? `\n\n(Usada a las ${timeStr}${scannedByStr})` : '';
+      const timeInfo = timeStr ? `\n\n(Canjeado a las ${timeStr}${scannedByStr})` : '';
 
-      return NextResponse.json({ valid: false, status: 'used', message: `❌ ENTRADA YA USADA\nNombre: ${ticketData.name}${timeInfo}` });
+      const isCoupon = qrData.type === 'coupon';
+      const msgHeader = isCoupon ? '❌ CUPÓN YA CANJEADO' : '❌ ENTRADA YA USADA';
+      const detailInfo = isCoupon ? `Consumo: ${qrData.pack_name}\nCliente: ${ticketData.name}` : `Nombre: ${ticketData.name}`;
+
+      return NextResponse.json({ valid: false, status: 'used', message: `${msgHeader}\n${detailInfo}${timeInfo}` });
     }
     
     if (qrData.status === 'archived') {
-      return NextResponse.json({ valid: false, status: 'invalid', message: `❌ ENTRADA ARCHIVADA (Evento pasado)` });
+      const isCoupon = qrData.type === 'coupon';
+      return NextResponse.json({ valid: false, status: 'invalid', message: `❌ ${isCoupon ? 'CUPÓN' : 'ENTRADA'} ARCHIVADO (Evento pasado)` });
     }
 
     if (qrData.status === 'approved') {
@@ -66,7 +71,12 @@ export async function POST(req) {
         scanned_at: new Date(),
         scanned_by: scannerName
       });
-      return NextResponse.json({ valid: true, status: 'success', message: `✅ ACCESO PERMITIDO\nNombre: ${ticketData.name}\nEntrada válida para 1 persona.` });
+      
+      if (qrData.type === 'coupon') {
+        return NextResponse.json({ valid: true, status: 'success', message: `✅ CUPÓN CANJEADO\nConsumo: ${qrData.pack_name}\nCliente: ${ticketData.name}` });
+      } else {
+        return NextResponse.json({ valid: true, status: 'success', message: `✅ ACCESO PERMITIDO\nNombre: ${ticketData.name}\nEntrada válida para 1 persona.` });
+      }
     }
 
     return NextResponse.json({ valid: false, status: 'invalid', message: '❌ ENTRADA NO APROBADA' });

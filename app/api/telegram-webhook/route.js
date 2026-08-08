@@ -118,14 +118,17 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     await answerTgCallbackQuery(callbackQueryId).catch(console.error);
 
     const ticketCount = row.ticket_count;
+    const drinkPacksList = row.drink_packs ? row.drink_packs.split(',').map(s => s.trim()).filter(Boolean) : [];
     const attachments = [];
     let qrHtml = '';
+    let couponHtml = '';
 
     for (let i = 0; i < ticketCount; i++) {
       const ticketUuid = uuidv4();
       await db.collection('qr_codes').add({
         ticket_id: id,
         uuid: ticketUuid,
+        type: 'ticket',
         status: 'approved',
         created_at: new Date()
       });
@@ -137,7 +140,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      attachments.push({ filename: `qrcode-docs-${i+1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
+      attachments.push({ filename: `entrada-docs-${i+1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
       
       qrHtml += `
       <div style="margin: 20px auto; max-width: 400px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333;">
@@ -146,6 +149,45 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         <img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:300px;">
         <p style="color:#A0A0A0; font-size: 12px;">ID: ${ticketUuid.split('-')[0]}</p>
       </div>`;
+    }
+
+    // Generate Drink Coupons
+    for (let i = 0; i < drinkPacksList.length; i++) {
+      const packName = drinkPacksList[i];
+      const couponUuid = uuidv4();
+      await db.collection('qr_codes').add({
+        ticket_id: id,
+        uuid: couponUuid,
+        type: 'coupon',
+        pack_name: packName,
+        status: 'approved',
+        created_at: new Date()
+      });
+
+      const qrDataUrl = await QRCode.toDataURL(couponUuid, { 
+        color: { dark: '#000000', light: '#FFFFFF' }, 
+        margin: 2,
+        width: 350
+      });
+      const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
+      
+      attachments.push({ filename: `cupon-${i+1}.png`, content: qrBuffer, cid: `coupon_image_${i}` });
+
+      couponHtml += `
+      <div style="margin: 30px auto; max-width: 400px; display: table; width: 100%; background-color: #ef4444; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+        <div style="display: table-cell; width: 65%; background: #ef4444; padding: 15px; text-align: center; vertical-align: middle;">
+          <div style="background: white; padding: 10px; border-radius: 8px; display: inline-block;">
+            <img src="cid:coupon_image_${i}" style="width: 100%; max-width: 200px; display: block;">
+          </div>
+        </div>
+        <div style="display: table-cell; width: 35%; background: white; padding: 15px; text-align: center; vertical-align: middle; border-left: 2px dashed #ef4444;">
+          <h2 style="color: #ef4444; margin: 0; font-size: 24px; font-weight: bold; text-transform: uppercase; word-break: break-word;">
+            ${packName}
+          </h2>
+          <p style="color: #666; font-size: 10px; margin-top: 10px;">CUPÓN<br>VÁLIDO</p>
+        </div>
+      </div>
+      `;
     }
 
     const mailOptions = {
@@ -157,7 +199,8 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
           <p>Hola ${row.name}, tu pago de Bs. ${row.total_bs} ha sido verificado con éxito.</p>
           <p>Aquí tienes tus códigos QR. <strong>Cada entrada es válida para 1 persona.</strong></p>
           ${qrHtml}
-          <p style="color:#A0A0A0;margin-top:30px;">No compartas estos códigos. Serán escaneados individualmente en la puerta.</p>
+          ${couponHtml ? `<h2 style="margin-top: 50px; color: #ef4444;">Tus Consumos en Barra</h2>${couponHtml}` : ''}
+          <p style="color:#A0A0A0;margin-top:30px;">No compartas estos códigos. Serán escaneados individualmente en la puerta y en la barra.</p>
       </div>`,
       attachments
     };

@@ -35,6 +35,7 @@ export default function AdminLayout({ children }) {
     { name: 'Eventos', path: '/admin/events', icon: <CalendarDays size={20} /> },
     { name: 'Entradas', path: '/admin/tickets', icon: <Ticket size={20} /> },
     { name: 'Escaneadas', path: '/admin/scanned', icon: <ScanLine size={20} /> },
+    { name: 'Consumos', path: '/admin/consumos', icon: <Ticket size={20} /> },
     { name: 'Escáner', path: '/admin/scanner', icon: <ScanLine size={20} /> },
     { name: 'Configuración', path: '/admin/settings', icon: <Settings size={20} /> },
   ];

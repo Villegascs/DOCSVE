@@ -89,42 +89,21 @@ export default function AdminEvents() {
     const file = e.target.files[0];
     if (!file) return;
 
+    // Verificar si es mayor a 900KB para evitar el límite de Firestore de 1MB
+    if (file.size > 900 * 1024) {
+      alert('⚠️ La imagen es muy pesada (más de 900KB). Para mantener la calidad original, súbela a un host externo (como Imgur) y pega el enlace en el campo "URL", o comprímela un poco antes de subirla.');
+      e.target.value = ''; // Reset input
+      return;
+    }
+
     setUploadingImage(true);
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new Image();
-      img.onload = () => {
-        // Redimensionar y comprimir usando un canvas
-        const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 1600; // Calidad HD
-        const MAX_HEIGHT = 1600;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height *= MAX_WIDTH / width;
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width *= MAX_HEIGHT / height;
-            height = MAX_HEIGHT;
-          }
-        }
-
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // Convertir a base64 con calidad casi máxima (0.95)
-        const base64String = canvas.toDataURL('image/jpeg', 0.95);
-        setFormData({ ...formData, image_url: base64String });
-        setUploadingImage(false);
-      };
-      img.src = event.target.result;
+      // Guardar el string base64 crudo con calidad 100% original
+      const base64String = event.target.result;
+      setFormData({ ...formData, image_url: base64String });
+      setUploadingImage(false);
     };
     reader.onerror = () => {
       alert('Error leyendo el archivo');

@@ -22,7 +22,10 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     }
+    
     fetchDashboard();
+    const interval = setInterval(fetchDashboard, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const formatTimeAgo = (timestamp) => {

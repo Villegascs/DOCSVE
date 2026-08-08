@@ -52,11 +52,11 @@ export default function AdminTickets() {
               onChange={(e) => setSelectedEventId(e.target.value)}
               style={{background: 'transparent', border: 'none', color: 'white', outline: 'none', cursor: 'pointer'}}
             >
-              <option value="all">Todos los Eventos</option>
+              <option value="all" style={{background: '#1a1a1a', color: 'white'}}>Todos los Eventos</option>
               {events.map(ev => (
-                <option key={ev.id} value={ev.id}>{ev.title}</option>
+                <option key={ev.id} value={ev.id} style={{background: '#1a1a1a', color: 'white'}}>{ev.title}</option>
               ))}
-              <option value="default_event">Evento por Defecto / Sin asignar</option>
+              <option value="default_event" style={{background: '#1a1a1a', color: 'white'}}>Evento por Defecto / Sin asignar</option>
             </select>
           </div>
 

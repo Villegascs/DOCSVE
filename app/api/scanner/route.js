@@ -3,10 +3,19 @@ import { db } from '@/lib/firebase-admin';
 
 export async function POST(req) {
   try {
-    const { uuid } = await req.json();
+    const { uuid, scannerKey, scannerName } = await req.json();
 
     if (!uuid) {
       return NextResponse.json({ valid: false, message: 'No se proveyó código QR' }, { status: 400 });
+    }
+    if (!scannerKey || !scannerName) {
+      return NextResponse.json({ valid: false, message: 'Faltan credenciales de escáner' }, { status: 401 });
+    }
+
+    // Verify key
+    const keySnapshot = await db.collection('scanner_keys').where('key', '==', scannerKey).limit(1).get();
+    if (keySnapshot.empty) {
+      return NextResponse.json({ valid: false, message: 'Clave de escáner inválida' }, { status: 401 });
     }
 
     const qrSnapshot = await db.collection('qr_codes').where('uuid', '==', uuid).limit(1).get();
@@ -37,7 +46,8 @@ export async function POST(req) {
     if (qrData.status === 'approved') {
       await db.collection('qr_codes').doc(qrDoc.id).update({ 
         status: 'used', 
-        scanned_at: new Date()
+        scanned_at: new Date(),
+        scanned_by: scannerName
       });
       return NextResponse.json({ valid: true, status: 'success', message: `✅ ACCESO PERMITIDO\nNombre: ${ticketData.name}\nEntrada válida para 1 persona.` });
     }

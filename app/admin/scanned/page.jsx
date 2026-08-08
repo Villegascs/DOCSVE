@@ -102,6 +102,7 @@ export default function AdminScannedTickets() {
                 <th>Cédula</th>
                 <th>ID Ticket</th>
                 <th>Hora de Escaneo</th>
+                <th>Escaneada Por</th>
               </tr>
             </thead>
             <tbody>
@@ -130,6 +131,7 @@ export default function AdminScannedTickets() {
                           <Clock size={16} color="#888" /> {scanDate}
                         </span>
                       </td>
+                      <td style={{color: '#a3e635'}}>{scan.scanned_by || 'Desconocido'}</td>
                     </tr>
                   );
                 })

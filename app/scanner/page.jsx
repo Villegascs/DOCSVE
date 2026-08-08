@@ -9,14 +9,73 @@ export default function AdminScanner() {
   const [isScanning, setIsScanning] = useState(false);
   const scannerRef = useRef(null);
 
+  // Auth states
+  const [authName, setAuthName] = useState('');
+  const [authKey, setAuthKey] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('docs_scanner_name');
+    const savedKey = localStorage.getItem('docs_scanner_key');
+    if (savedName && savedKey) {
+      setAuthName(savedName);
+      setAuthKey(savedKey);
+      setIsAuthenticated(true);
+    }
+    setAuthLoading(false);
+  }, []);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError('');
+
+    try {
+      const res = await fetch('/api/scanner/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: authKey })
+      });
+      const data = await res.json();
+      
+      if (data.valid) {
+        localStorage.setItem('docs_scanner_name', authName);
+        localStorage.setItem('docs_scanner_key', authKey);
+        setIsAuthenticated(true);
+      } else {
+        setAuthError(data.message || 'Clave inválida');
+      }
+    } catch (e) {
+      setAuthError('Error de conexión');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('docs_scanner_name');
+    localStorage.removeItem('docs_scanner_key');
+    setIsAuthenticated(false);
+    setIsScanning(false);
+  };
+
   const processScan = async (uuid) => {
     try {
       const res = await fetch('/api/scanner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid })
+        body: JSON.stringify({ uuid, scannerName: authName, scannerKey: authKey })
       });
       const data = await res.json();
+      
+      if (res.status === 401) {
+        handleLogout();
+        alert('Tu sesión expiró o la clave fue revocada.');
+        return;
+      }
+      
       setScanResult(data);
       if (data.valid) {
         // Play success sound if needed
@@ -69,10 +128,54 @@ export default function AdminScanner() {
     };
   }, [isScanning]);
 
+  if (authLoading) return <div style={{padding: '2rem', textAlign: 'center'}}>Cargando...</div>;
+
+  if (!isAuthenticated) {
+    return (
+      <div style={{display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '1rem'}}>
+        <div className="admin-table-container" style={{padding: '2rem', maxWidth: '400px', width: '100%'}}>
+          <div style={{textAlign: 'center', marginBottom: '2rem'}}>
+            <img src="/Logos/docs png.png" alt="DOCS" style={{width: '150px'}} />
+            <h2 style={{marginTop: '1rem'}}>Escáner de Seguridad</h2>
+          </div>
+          
+          <form className="admin-form" onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Tu Nombre / Alias</label>
+              <input 
+                type="text" 
+                placeholder="Ej: Pedro Perez" 
+                value={authName}
+                onChange={(e) => setAuthName(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label>Clave de Acceso</label>
+              <input 
+                type="password" 
+                placeholder="Introducir clave secreta" 
+                value={authKey}
+                onChange={(e) => setAuthKey(e.target.value)}
+                required
+              />
+            </div>
+            {authError && <p style={{color: '#ff4444', fontSize: '0.9rem', marginBottom: '1rem'}}>{authError}</p>}
+            <button type="submit" className="btn-primary full-width">INGRESAR</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      <div className="admin-header">
-        <h1 className="admin-title">Escáner Web de Entradas</h1>
+      <div className="admin-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', padding: '1rem'}}>
+        <h1 className="admin-title">Escáner Web (Seguridad)</h1>
+        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+          <span style={{color: '#888'}}>Hola, <strong>{authName}</strong></span>
+          <button className="btn-secondary" style={{padding: '0.4rem 0.8rem'}} onClick={handleLogout}>Salir</button>
+        </div>
       </div>
 
       <div style={{display: 'flex', gap: '2rem', flexWrap: 'wrap'}}>

@@ -17,7 +17,8 @@ export default function AdminEvents() {
     status: 'active',
     isMainEvent: false,
     image_url: '',
-    ticketLimit: 0
+    ticketLimit: 0,
+    ticketTypes: []
   });
 
   useEffect(() => {
@@ -38,12 +39,14 @@ export default function AdminEvents() {
     }
   };
 
-  const openModal = (event = null) => {
     if (event) {
-      setFormData(event);
+      setFormData({
+        ...event,
+        ticketTypes: event.ticketTypes || []
+      });
     } else {
       setFormData({
-        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0
+        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0, ticketTypes: []
       });
     }
     setShowModal(true);
@@ -110,6 +113,25 @@ export default function AdminEvents() {
       setUploadingImage(false);
     };
     reader.readAsDataURL(file);
+  };
+
+  const addTicketType = () => {
+    setFormData({
+      ...formData,
+      ticketTypes: [...(formData.ticketTypes || []), { name: '', price: 0 }]
+    });
+  };
+
+  const removeTicketType = (index) => {
+    const newTypes = [...formData.ticketTypes];
+    newTypes.splice(index, 1);
+    setFormData({ ...formData, ticketTypes: newTypes });
+  };
+
+  const updateTicketType = (index, field, value) => {
+    const newTypes = [...formData.ticketTypes];
+    newTypes[index][field] = value;
+    setFormData({ ...formData, ticketTypes: newTypes });
   };
 
   return (
@@ -235,6 +257,30 @@ export default function AdminEvents() {
               <div className="form-group" style={{flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', marginBottom: '1rem'}}>
                 <input type="checkbox" id="isMain" checked={formData.isMainEvent} onChange={e => setFormData({...formData, isMainEvent: e.target.checked})} style={{width: 'auto'}} />
                 <label htmlFor="isMain" style={{marginBottom: 0, cursor: 'pointer', color: 'white'}}>Establecer como Evento Principal (Para la cuenta regresiva)</label>
+              </div>
+
+              {/* Dynamic Ticket Types Section */}
+              <div className="form-group" style={{marginTop: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'}}>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+                  <h3 style={{fontSize: '1.1rem', margin: 0, color: 'var(--primary-neon)'}}>Tipos de Entradas / Fases</h3>
+                  <button type="button" onClick={addTicketType} className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem'}}>+ Añadir Tipo</button>
+                </div>
+                
+                {(!formData.ticketTypes || formData.ticketTypes.length === 0) ? (
+                  <p style={{fontSize: '0.9rem', color: '#888'}}>Si no agregas tipos, se usará un precio base por defecto.</p>
+                ) : (
+                  formData.ticketTypes.map((type, index) => (
+                    <div key={index} style={{display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-start'}}>
+                      <div style={{flex: 2}}>
+                        <input type="text" placeholder="Nombre (Ej: General Admission)" required value={type.name} onChange={(e) => updateTicketType(index, 'name', e.target.value)} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={type.price} onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} />
+                      </div>
+                      <button type="button" onClick={() => removeTicketType(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
+                    </div>
+                  ))
+                )}
               </div>
 
               <button type="submit" className="btn-primary" style={{marginTop: '1rem'}}>{formData.id ? 'ACTUALIZAR EVENTO' : 'GUARDAR EVENTO'}</button>

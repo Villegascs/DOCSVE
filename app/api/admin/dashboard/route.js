@@ -32,6 +32,7 @@ export async function GET() {
           id: doc.id,
           name: data.name,
           ticket_count: count,
+          ticket_type: data.ticket_type || 'General',
           bank: data.bank,
           ref: data.ref,
           status: data.status,

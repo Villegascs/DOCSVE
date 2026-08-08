@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 
 export default function PurchaseModal({ event, onClose }) {
   const [ticketCount, setTicketCount] = useState(1);
+  const [selectedTicketType, setSelectedTicketType] = useState(
+    event.ticketTypes && event.ticketTypes.length > 0 ? event.ticketTypes[0] : null
+  );
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
@@ -23,7 +26,7 @@ export default function PurchaseModal({ event, onClose }) {
     fetchRate();
   }, []);
 
-  const ticketPriceEUR = 3;
+  const ticketPriceEUR = selectedTicketType ? selectedTicketType.price : 3; // Fallback a 3 EUR si no hay tipos
   const totalBs = currentRateEUR > 0 ? (currentRateEUR * ticketPriceEUR * ticketCount).toFixed(2) : 'Cargando...';
 
   const copyText = (text, key) => {
@@ -40,6 +43,7 @@ export default function PurchaseModal({ event, onClose }) {
     formData.append('ticketCount', ticketCount);
     formData.append('totalBs', totalBs);
     formData.append('eventId', event.id);
+    formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
 
     try {
       const response = await fetch('/api/tickets/request', {
@@ -69,7 +73,35 @@ export default function PurchaseModal({ event, onClose }) {
         {!success ? (
           <>
             <h2 className="modal-main-title">VERIFICACIÓN DE PAGO</h2>
-            <p className="modal-subtitle">Para asegurar tus entradas a <strong>DOCS</strong> (€3 c/u), realiza el pago vía Pago Móvil, Zelle o Binance y envía el comprobante.</p>
+            <p className="modal-subtitle">Para asegurar tus entradas a <strong>{event.title}</strong>, realiza el pago vía Pago Móvil, Zelle o Binance y envía el comprobante.</p>
+            
+            {event.ticketTypes && event.ticketTypes.length > 0 && (
+              <div className="ticket-types-container" style={{marginBottom: '2rem'}}>
+                <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Selecciona el Tipo de Entrada:</h4>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
+                  {event.ticketTypes.map((type, index) => (
+                    <label key={index} style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                      background: selectedTicketType?.name === type.name ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
+                      padding: '1rem 1.5rem', borderRadius: '8px', border: `1px solid ${selectedTicketType?.name === type.name ? 'var(--primary-neon)' : '#222'}`,
+                      cursor: 'pointer', transition: 'all 0.2s'
+                    }}>
+                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                        <input 
+                          type="radio" 
+                          name="ticketTypeSelection" 
+                          checked={selectedTicketType?.name === type.name}
+                          onChange={() => setSelectedTicketType(type)}
+                          style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem'}}
+                        />
+                        <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>{type.name}</span>
+                      </div>
+                      <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="payment-info">
               <div className="bank-col">

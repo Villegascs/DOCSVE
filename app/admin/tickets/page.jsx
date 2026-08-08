@@ -102,7 +102,7 @@ export default function AdminTickets() {
                     <tr key={ticket.id}>
                       <td>{ticket.name}</td>
                       <td>{ticket.cedula}</td>
-                      <td>{ticket.ticket_count}</td>
+                      <td>{ticket.ticket_count}x {ticket.ticket_type || 'General'}</td>
                       <td>
                         <span style={{color: scannedCount > 0 ? '#34d399' : '#888'}}>
                           {scannedCount} / {ticket.ticket_count}

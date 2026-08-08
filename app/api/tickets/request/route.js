@@ -16,6 +16,7 @@ export async function POST(req) {
     const ticketCount = parseInt(formData.get('ticketCount'), 10);
     const totalBs = formData.get('totalBs');
     const eventId = formData.get('eventId') || 'default_event';
+    const ticketTypeName = formData.get('ticketTypeName') || 'Entrada General';
     const receiptFile = formData.get('receipt');
 
     if (!receiptFile || typeof receiptFile === 'string') {
@@ -29,6 +30,7 @@ export async function POST(req) {
     const ticketRef = await db.collection('tickets').add({
       name, email, cedula, phone, bank, ref,
       ticket_count: ticketCount,
+      ticket_type: ticketTypeName,
       total_bs: totalBs,
       event_id: eventId,
       status: 'pending',
@@ -39,7 +41,7 @@ export async function POST(req) {
 
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {
-      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
+      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}x ${ticketTypeName}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
 
       for (const chatId of adminChatIds) {
         try {

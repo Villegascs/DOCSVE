@@ -38,7 +38,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, date, location, description, image_url, status, isMainEvent, ticketLimit } = body;
+    const { title, date, location, description, image_url, status, isMainEvent, ticketLimit, ticketTypes } = body;
 
     // Si es el evento principal, actualizar los demas a false
     if (isMainEvent) {
@@ -59,6 +59,7 @@ export async function POST(request) {
       status: status || 'active',
       isMainEvent: !!isMainEvent,
       ticketLimit: Number(ticketLimit) || 0,
+      ticketTypes: Array.isArray(ticketTypes) ? ticketTypes : [],
       created_at: new Date().toISOString()
     };
 
@@ -74,7 +75,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, date, location, description, image_url, status, isMainEvent, ticketLimit } = body;
+    const { id, title, date, location, description, image_url, status, isMainEvent, ticketLimit, ticketTypes } = body;
 
     if (!id) throw new Error('ID is required');
 
@@ -91,7 +92,8 @@ export async function PUT(request) {
 
     const updateData = {
       title, date, location, description, status, isMainEvent: !!isMainEvent,
-      ticketLimit: Number(ticketLimit) || 0
+      ticketLimit: Number(ticketLimit) || 0,
+      ticketTypes: Array.isArray(ticketTypes) ? ticketTypes : []
     };
     if (image_url) updateData.image_url = image_url;
 

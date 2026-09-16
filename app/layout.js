@@ -12,8 +12,40 @@ const outfit = Outfit({
 });
 
 export const metadata = {
-  title: "DÖCS | Eventos",
+  metadataBase: new URL('https://docsevents.com'),
+  title: {
+    default: "DÖCS | Eventos",
+    template: "%s | DÖCS",
+  },
   description: "DOCS - La experiencia definitiva en fiestas electrónicas underground. Compra tus entradas, escucha nuestros sets y sé parte de la comunidad.",
+  keywords: ["DOCS", "DÖCS", "fiestas electrónicas", "música electrónica", "tickets", "eventos", "Caracas", "Venezuela", "underground"],
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  openGraph: {
+    title: "DÖCS | Eventos",
+    description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
+    url: "https://docsevents.com",
+    siteName: "DÖCS Events",
+    locale: "es_VE",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "DÖCS | Eventos",
+    description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
+  },
 };
 
 export default function RootLayout({ children }) {

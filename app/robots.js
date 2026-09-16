@@ -1,5 +1,5 @@
 export default function robots() {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://docsevents.com';
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.docsevents.com';
 
   return {
     rules: {

@@ -12,7 +12,7 @@ const outfit = Outfit({
 });
 
 export const metadata = {
-  metadataBase: new URL('https://docsevents.com'),
+  metadataBase: new URL('https://www.docsevents.com'),
   title: {
     default: "DÖCS | Eventos",
     template: "%s | DÖCS",
@@ -36,7 +36,7 @@ export const metadata = {
   openGraph: {
     title: "DÖCS | Eventos",
     description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
-    url: "https://docsevents.com",
+    url: "https://www.docsevents.com",
     siteName: "DÖCS Events",
     locale: "es_VE",
     type: "website",

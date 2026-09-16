@@ -46,6 +46,9 @@ export const metadata = {
     title: "DÖCS | Eventos",
     description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
   },
+  verification: {
+    google: "V9HkzDT8MI6TDCDOEqXVtNUzomyFynf9N1Yf6b-Jyig",
+  },
 };
 
 export default function RootLayout({ children }) {

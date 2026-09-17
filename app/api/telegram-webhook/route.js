@@ -48,17 +48,43 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
+    // Evento al añadir el bot a un nuevo grupo
+    if (body.my_chat_member && token) {
+      const chat = body.my_chat_member.chat;
+      const status = body.my_chat_member.new_chat_member?.status;
+      if (['member', 'administrator'].includes(status)) {
+        await sendTgMessage(chat.id, `👋 <b>¡Hola equipo de DÖCS!</b>\n\nEl bot ya está en este grupo para notificar nuevos pagos y gestionar aprobaciones en equipo.\n\n🆔 <b>ID de este grupo:</b>\n<code>${chat.id}</code>\n\n<b>Pasos para activarlo:</b>\n1. Haz al bot <b>Administrador</b> de este grupo.\n2. Copia el ID de arriba y agrégalo a <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel (si tienes otros IDs, sepáralos con comas).`, { parse_mode: 'HTML' }).catch(console.error);
+        return NextResponse.json({ success: true });
+      }
+    }
+
+    if (body.message && body.message.new_chat_members && token) {
+      const chatId = body.message.chat.id.toString();
+      const isBotAdded = body.message.new_chat_members.some(member => member.is_bot);
+      if (isBotAdded) {
+        await sendTgMessage(chatId, `👋 <b>¡Hola equipo de DÖCS!</b>\n\nEl bot ya está listo en este grupo.\n\n🆔 <b>ID de este grupo:</b>\n<code>${chatId}</code>\n\n<b>Pasos para activarlo:</b>\n1. Dale permisos de <b>Administrador</b> al bot.\n2. Copia el ID y agrégalo a <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel.`, { parse_mode: 'HTML' }).catch(console.error);
+        return NextResponse.json({ success: true });
+      }
+    }
+
     if (body.callback_query && token) {
       const query = body.callback_query;
       const [action, id] = query.data.split('_');
       const chatId = query.message.chat.id;
       const messageId = query.message.message_id;
       const callbackQueryId = query.id;
+      const actorName = query.from?.username ? `@${query.from.username}` : (query.from?.first_name || 'Admin');
+
+      const adminChats = (process.env.TELEGRAM_ADMIN_CHAT_ID || '').split(',').map(id => id.trim()).filter(Boolean);
+      if (adminChats.length > 0 && !adminChats.includes(chatId.toString())) {
+        await answerTgCallbackQuery(callbackQueryId, { text: "No tienes autorización para este bot.", show_alert: true }).catch(console.error);
+        return NextResponse.json({ success: true });
+      }
 
       if (action === 'approve') {
-        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
+        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId, actorName);
       } else if (action === 'reject') {
-        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
+        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId, actorName);
       } else if (action === 'expVentas') {
         await handleExport(id, chatId, callbackQueryId, 'tickets');
       } else if (action === 'expScan') {
@@ -66,12 +92,19 @@ export async function POST(req) {
       }
     } else if (body.message && body.message.text && token) {
       const chatId = body.message.chat.id.toString();
+      const rawText = body.message.text.trim();
+      const text = rawText.split('@')[0].toLowerCase();
+
+      // Comando libre para conocer el ID del grupo o chat
+      if (text === '/id' || text === '/chatid' || text === '/start') {
+        await sendTgMessage(chatId, `🆔 <b>ID de este chat / grupo:</b>\n<code>${chatId}</code>\n\nCopia este ID y agrégalo a la variable <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel (puedes separar varios IDs con comas).`, { parse_mode: 'HTML' });
+        return NextResponse.json({ success: true });
+      }
+
       const adminChats = (process.env.TELEGRAM_ADMIN_CHAT_ID || '').split(',').map(id => id.trim());
       
-      // Restrict commands to admin chat IDs (or group where bot is)
+      // Restringir comandos a administradores o grupos autorizados
       if (adminChats.includes(chatId)) {
-        const text = body.message.text.trim();
-        
         if (text === '/ventas' || text === '/escaneadas') {
           const action = text === '/ventas' ? 'expVentas' : 'expScan';
           const eventsSnap = await db.collection('events').where('status', '==', 'active').get();
@@ -97,7 +130,7 @@ export async function POST(req) {
   }
 }
 
-async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
+async function handleApprove(id, chatId, messageId, caption, callbackQueryId, actorName = '') {
   try {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
@@ -112,7 +145,8 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
 
     await ticketRef.update({ status: 'approved' });
 
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
+    const who = actorName ? ` por <b>${actorName}</b>` : '';
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO${who}</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
     await answerTgCallbackQuery(callbackQueryId).catch(console.error);
@@ -220,7 +254,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
   }
 }
 
-async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
+async function handleReject(id, chatId, messageId, caption, callbackQueryId, actorName = '') {
   try {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
@@ -234,7 +268,8 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
 
     await ticketRef.update({ status: 'rejected' });
     
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
+    const who = actorName ? ` por <b>${actorName}</b>` : '';
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO${who}</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
     await answerTgCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);

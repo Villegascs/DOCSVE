@@ -320,58 +320,61 @@ export default function AdminEvents() {
                   </p>
                 ) : (
                   formData.ticketTypes.map((type, index) => (
-                    <div key={index} className="dynamic-item-row">
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem'}}>
-                        <span style={{fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-neon)', letterSpacing: '1px'}}>
-                          OPCIÓN DE VENTA #{index + 1}
-                        </span>
+                    <div key={index} className="dynamic-item-card">
+                      <div className="dynamic-item-card-header">
+                        <div className="item-badge">
+                          <Ticket size={13} />
+                          <span>Opción #{index + 1}</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => removeTicketType(index)} 
+                          className="btn-remove-item"
+                          title="Eliminar este tipo de entrada"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar</span>
+                        </button>
                       </div>
-                      <div className="dynamic-row-grid-tickets" style={{display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.2fr auto', gap: '0.85rem', alignItems: 'flex-start'}}>
-                        <div>
+
+                      <div className="dynamic-row-grid-tickets" style={{display: 'grid', gridTemplateColumns: '1.8fr 1.1fr 1.1fr', gap: '1rem'}}>
+                        <div className="dynamic-field-group">
                           <label className="dynamic-field-label">Nombre entrada:</label>
                           <input 
                             type="text" 
+                            className="dynamic-input"
                             placeholder="Ej. General / VIP / Preventa" 
                             required 
                             value={type.name} 
                             onChange={(e) => updateTicketType(index, 'name', e.target.value)} 
                           />
                         </div>
-                        <div>
+                        <div className="dynamic-field-group">
                           <label className="dynamic-field-label">
-                            Límite de Entradas: <span style={{fontSize: '0.7rem', color: '#777'}}>(0 = ∞)</span>
+                            Límite de Entradas: <span className="sub-label">(0 = ∞)</span>
                           </label>
                           <input 
                             type="number" 
                             min="0" 
+                            className="dynamic-input"
                             placeholder="Ej: 100" 
                             required 
                             value={type.limit !== undefined ? type.limit : 0} 
                             onChange={(e) => updateTicketType(index, 'limit', Number(e.target.value))} 
                           />
                         </div>
-                        <div>
+                        <div className="dynamic-field-group">
                           <label className="dynamic-field-label">Precio (€ / $):</label>
                           <input 
                             type="number" 
                             step="0.01" 
                             min="0" 
+                            className="dynamic-input"
                             placeholder="Ej: 5.00" 
                             required 
                             value={type.price} 
                             onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} 
                           />
-                        </div>
-                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%'}}>
-                          <label className="dynamic-field-label" style={{visibility: 'hidden', height: '1.1rem'}}>&nbsp;</label>
-                          <button 
-                            type="button" 
-                            onClick={() => removeTicketType(index)} 
-                            className="btn-delete-row" 
-                            title="Eliminar este tipo de entrada"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -404,45 +407,47 @@ export default function AdminEvents() {
                   </p>
                 ) : (
                   formData.drinkPacks.map((pack, index) => (
-                    <div key={index} className="dynamic-item-row">
-                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem'}}>
-                        <span style={{fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-neon)', letterSpacing: '1px'}}>
-                          COMBO #{index + 1}
-                        </span>
+                    <div key={index} className="dynamic-item-card">
+                      <div className="dynamic-item-card-header">
+                        <div className="item-badge">
+                          <Wine size={13} />
+                          <span>Combo #{index + 1}</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={() => removeDrinkPack(index)} 
+                          className="btn-remove-item"
+                          title="Eliminar este combo"
+                        >
+                          <Trash2 size={13} />
+                          <span>Eliminar</span>
+                        </button>
                       </div>
-                      <div className="dynamic-row-grid-drinks" style={{display: 'grid', gridTemplateColumns: '2fr 1.2fr auto', gap: '0.85rem', alignItems: 'flex-start'}}>
-                        <div>
+
+                      <div className="dynamic-row-grid-drinks" style={{display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem'}}>
+                        <div className="dynamic-field-group">
                           <label className="dynamic-field-label">Nombre del Combo:</label>
                           <input 
                             type="text" 
+                            className="dynamic-input"
                             placeholder="Ej: 3 Red Bulls / Pack Cervezas" 
                             required 
                             value={pack.name} 
                             onChange={(e) => updateDrinkPack(index, 'name', e.target.value)} 
                           />
                         </div>
-                        <div>
+                        <div className="dynamic-field-group">
                           <label className="dynamic-field-label">Precio (€ / $):</label>
                           <input 
                             type="number" 
                             step="0.01" 
                             min="0" 
+                            className="dynamic-input"
                             placeholder="Ej: 15.00" 
                             required 
                             value={pack.price} 
                             onChange={(e) => updateDrinkPack(index, 'price', Number(e.target.value))} 
                           />
-                        </div>
-                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%'}}>
-                          <label className="dynamic-field-label" style={{visibility: 'hidden', height: '1.1rem'}}>&nbsp;</label>
-                          <button 
-                            type="button" 
-                            onClick={() => removeDrinkPack(index)} 
-                            className="btn-delete-row" 
-                            title="Eliminar este combo"
-                          >
-                            <Trash2 size={16} />
-                          </button>
                         </div>
                       </div>
                     </div>

@@ -37,6 +37,15 @@ async function editTgMessageCaption(chatId, messageId, caption, options = {}) {
   });
 }
 
+async function editTgMessageReplyMarkup(chatId, messageId, replyMarkup = { inline_keyboard: [] }) {
+  const payload = { chat_id: chatId, message_id: messageId, reply_markup: replyMarkup };
+  return fetch(`https://api.telegram.org/bot${token}/editMessageReplyMarkup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+}
+
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
@@ -235,27 +244,46 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
 
-    if (!ticketDoc.exists) return sendTgMessage(chatId, "⚠️ Error: No se encontró el ticket en la base de datos.");
+    if (!ticketDoc.exists) {
+      if (callbackQueryId) {
+        answerTgCallbackQuery(callbackQueryId, { text: "⚠️ Error: No se encontró el ticket en la BD." }).catch(() => {});
+      }
+      return sendTgMessage(chatId, "⚠️ Error: No se encontró el ticket en la base de datos.");
+    }
     const row = ticketDoc.data() || {};
 
     if (row.status !== 'pending') {
       if (callbackQueryId) {
-        answerTgCallbackQuery(callbackQueryId, { text: "ℹ️ Este pago ya fue procesado." }).catch(() => {});
+        answerTgCallbackQuery(callbackQueryId, { text: `ℹ️ Este pago ya está ${row.status.toUpperCase()}.` }).catch(() => {});
       }
+      await editTgMessageReplyMarkup(chatId, messageId, {
+        inline_keyboard: [[{ text: `✓ Estado: ${row.status.toUpperCase()}`, callback_data: 'noop' }]]
+      }).catch(() => {});
       return;
     }
 
+    // Cambiar inmediatamente los botones en Telegram para dar feedback instantáneo
+    await editTgMessageReplyMarkup(chatId, messageId, {
+      inline_keyboard: [[{ text: '⏳ Aprobando y enviando entradas...', callback_data: 'noop' }]]
+    }).catch(() => {});
+
     await ticketRef.update({ status: 'approved' });
 
+    // Actualizar caption en Telegram de forma segura
     try {
-      await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
-        parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+      const cleanCap = (caption || 'NUEVO PAGO RECIBIDO') + '\n\n✅ <b>APROBADO</b>';
+      const capRes = await editTgMessageCaption(chatId, messageId, cleanCap, {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '✅ Aprobado y Enviado', callback_data: 'noop' }]] }
       });
+      const capData = await capRes.json().catch(() => null);
+      if (!capData?.ok) {
+        await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO RECIBIDO'}\n\n✅ APROBADO`, {
+          reply_markup: { inline_keyboard: [[{ text: '✅ Aprobado y Enviado', callback_data: 'noop' }]] }
+        }).catch(console.error);
+      }
     } catch (captionErr) {
-      console.error("Fallo editando caption con HTML, reintentando modo plano:", captionErr);
-      await editTgMessageCaption(chatId, messageId, `✅ PAGO APROBADO CON ÉXITO`, {
-        reply_markup: { inline_keyboard: [] }
-      }).catch(console.error);
+      console.error("Fallo editando caption:", captionErr);
     }
 
     const ticketCount = Math.max(1, parseInt(row.ticket_count, 10) || 1);
@@ -484,6 +512,10 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     try {
       const info = await transporter.sendMail(mailOptions);
       console.log("Email enviado SMTP:", info.response);
+      await sendTgMessage(chatId, `🎟 <b>Entradas Enviadas con Éxito</b>\nSe han enviado ${ticketCount} entrada(s) al correo de <b>${row.name}</b> (<code>${row.email}</code>).`, { parse_mode: 'HTML' });
+      if (callbackQueryId) {
+        answerTgCallbackQuery(callbackQueryId, { text: "✅ ¡Entradas enviadas con éxito!" }).catch(() => {});
+      }
     } catch (err) {
       console.error("Error email SMTP:", err);
       await sendTgMessage(chatId, `⚠️ <b>Error Crítico:</b> No se pudo enviar el correo a ${row.email}.\n\n<b>Motivo:</b> ${err.message}`, { parse_mode: 'HTML' });
@@ -509,21 +541,39 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
     const row = ticketDoc.data() || {};
     if (row.status !== 'pending') {
       if (callbackQueryId) {
-        answerTgCallbackQuery(callbackQueryId, { text: "ℹ️ Este pago ya fue procesado." }).catch(() => {});
+        answerTgCallbackQuery(callbackQueryId, { text: `ℹ️ Este pago ya está ${row.status.toUpperCase()}.` }).catch(() => {});
       }
+      await editTgMessageReplyMarkup(chatId, messageId, {
+        inline_keyboard: [[{ text: `✓ Estado: ${row.status.toUpperCase()}`, callback_data: 'noop' }]]
+      }).catch(() => {});
       return;
     }
+
+    await editTgMessageReplyMarkup(chatId, messageId, {
+      inline_keyboard: [[{ text: '❌ Rechazado', callback_data: 'noop' }]]
+    }).catch(() => {});
 
     await ticketRef.update({ status: 'rejected' });
 
     try {
-      await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
-        parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+      const cleanCap = (caption || 'PAGO RECIBIDO') + '\n\n❌ <b>RECHAZADO</b>';
+      const capRes = await editTgMessageCaption(chatId, messageId, cleanCap, {
+        parse_mode: 'HTML',
+        reply_markup: { inline_keyboard: [[{ text: '❌ Pago Rechazado', callback_data: 'noop' }]] }
       });
+      const capData = await capRes.json().catch(() => null);
+      if (!capData?.ok) {
+        await editTgMessageCaption(chatId, messageId, `${caption || 'PAGO RECIBIDO'}\n\n❌ RECHAZADO`, {
+          reply_markup: { inline_keyboard: [[{ text: '❌ Pago Rechazado', callback_data: 'noop' }]] }
+        }).catch(console.error);
+      }
     } catch (captionErr) {
-      await editTgMessageCaption(chatId, messageId, `❌ PAGO RECHAZADO`, {
-        reply_markup: { inline_keyboard: [] }
-      }).catch(console.error);
+      console.error("Fallo editando caption reject:", captionErr);
+    }
+
+    await sendTgMessage(chatId, `❌ <b>Pago Rechazado</b>\nEl pago de <b>${row.name}</b> (Ref: ${row.ref || 'N/A'}) ha sido marcado como rechazado.`, { parse_mode: 'HTML' });
+    if (callbackQueryId) {
+      answerTgCallbackQuery(callbackQueryId, { text: "❌ Pago marcado como rechazado." }).catch(() => {});
     }
   } catch (e) {
     console.error("Error en handleReject:", e);

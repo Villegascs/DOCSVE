@@ -61,7 +61,10 @@ export default function AdminScanner() {
     setIsScanning(false);
   };
 
+  const [loading, setLoading] = useState(false);
+
   const processScan = async (uuid) => {
+    setLoading(true);
     try {
       const res = await fetch('/api/scanner', {
         method: 'POST',
@@ -82,12 +85,14 @@ export default function AdminScanner() {
       }
     } catch (e) {
       setScanResult({ valid: false, message: '❌ ERROR DE CONEXIÓN' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleManualScan = (e) => {
     e.preventDefault();
-    if (!uuidInput) return;
+    if (!uuidInput || loading) return;
     if (scannerRef.current && isScanning) scannerRef.current.pause(true);
     processScan(uuidInput);
     setUuidInput('');
@@ -267,7 +272,14 @@ export default function AdminScanner() {
                 style={{width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px'}}
               />
             </div>
-            <button type="submit" className="btn-secondary full-width">Verificar</button>
+            <button 
+              type="submit" 
+              className="btn-secondary full-width"
+              disabled={loading}
+              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? 'wait' : 'pointer' }}
+            >
+              {loading ? 'Verificando...' : 'Verificar'}
+            </button>
           </form>
         </div>
       </div>

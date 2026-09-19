@@ -28,16 +28,12 @@ export async function POST(req) {
 
     const cleanInput = (uuid || '').trim().toLowerCase();
 
-    // 1. Buscar por UUID exacto
-    let qrSnapshot = await db.collection('qr_codes').where('uuid', '==', cleanInput).limit(1).get();
-
-    // 2. Si no lo encuentra, buscar por short_id (los 8 caracteres que salen debajo del QR)
-    if (qrSnapshot.empty && cleanInput.length === 8) {
-      qrSnapshot = await db.collection('qr_codes').where('short_id', '==', cleanInput).limit(1).get();
-    }
-
-    // 3. Respaldo por prefijo en el campo uuid para entradas anteriores
-    if (qrSnapshot.empty && cleanInput.length >= 6) {
+    // Optimización ultra-rápida: 1 sola consulta directa
+    // Si tiene 32+ caracteres con guión es UUID completo, sino busca por prefijo (8 caracteres bajo el QR)
+    let qrSnapshot;
+    if (cleanInput.length >= 32 && cleanInput.includes('-')) {
+      qrSnapshot = await db.collection('qr_codes').where('uuid', '==', cleanInput).limit(1).get();
+    } else {
       qrSnapshot = await db.collection('qr_codes')
         .where('uuid', '>=', cleanInput)
         .where('uuid', '<=', cleanInput + '\uf8ff')
@@ -52,14 +48,34 @@ export async function POST(req) {
     const qrDoc = qrSnapshot.docs[0];
     const qrData = qrDoc.data();
 
-    const ticketDoc = await db.collection('tickets').doc(qrData.ticket_id).get();
-    
-    if (!ticketDoc.exists) {
-      return NextResponse.json({ valid: false, status: 'invalid', message: '❌ TICKET NO ENCONTRADO' });
-    }
-    
-    const ticketData = ticketDoc.data();
+    // 1. Caso principal: Entrada aprobada -> Actualizar QR y obtener Ticket en PARALELO
+    if (qrData.status === 'approved') {
+      const updatePromise = db.collection('qr_codes').doc(qrDoc.id).update({ 
+        status: 'used', 
+        scanned_at: new Date(),
+        scanned_by: effectiveScannerName
+      });
+      const ticketPromise = db.collection('tickets').doc(qrData.ticket_id).get();
 
+      const [, ticketDoc] = await Promise.all([updatePromise, ticketPromise]);
+      const ticketData = ticketDoc.exists ? ticketDoc.data() : { name: 'Cliente' };
+
+      if (qrData.type === 'coupon') {
+        return NextResponse.json({ 
+          valid: true, 
+          status: 'success', 
+          message: `✅ CUPÓN CANJEADO\nConsumo: ${qrData.pack_name || 'Bebida'}\nCliente: ${ticketData.name}` 
+        });
+      } else {
+        return NextResponse.json({ 
+          valid: true, 
+          status: 'success', 
+          message: `✅ ACCESO PERMITIDO\nNombre: ${ticketData.name}\nEntrada válida para 1 persona.` 
+        });
+      }
+    }
+
+    // 2. Caso: Entrada ya usada previamente
     if (qrData.status === 'used') {
       let timeStr = '';
       if (qrData.scanned_at) {
@@ -78,30 +94,20 @@ export async function POST(req) {
       const scannedByStr = qrData.scanned_by ? ` por ${qrData.scanned_by}` : '';
       const timeInfo = timeStr ? `\n\n(Canjeado a las ${timeStr}${scannedByStr})` : '';
 
+      const ticketDoc = await db.collection('tickets').doc(qrData.ticket_id).get();
+      const ticketData = ticketDoc.exists ? ticketDoc.data() : { name: 'Cliente' };
+
       const isCoupon = qrData.type === 'coupon';
       const msgHeader = isCoupon ? '❌ CUPÓN YA CANJEADO' : '❌ ENTRADA YA USADA';
-      const detailInfo = isCoupon ? `Consumo: ${qrData.pack_name}\nCliente: ${ticketData.name}` : `Nombre: ${ticketData.name}`;
+      const detailInfo = isCoupon ? `Consumo: ${qrData.pack_name || 'Bebida'}\nCliente: ${ticketData.name}` : `Nombre: ${ticketData.name}`;
 
       return NextResponse.json({ valid: false, status: 'used', message: `${msgHeader}\n${detailInfo}${timeInfo}` });
     }
     
+    // 3. Caso: Archivado (Evento pasado)
     if (qrData.status === 'archived') {
       const isCoupon = qrData.type === 'coupon';
       return NextResponse.json({ valid: false, status: 'invalid', message: `❌ ${isCoupon ? 'CUPÓN' : 'ENTRADA'} ARCHIVADO (Evento pasado)` });
-    }
-
-    if (qrData.status === 'approved') {
-      await db.collection('qr_codes').doc(qrDoc.id).update({ 
-        status: 'used', 
-        scanned_at: new Date(),
-        scanned_by: effectiveScannerName
-      });
-      
-      if (qrData.type === 'coupon') {
-        return NextResponse.json({ valid: true, status: 'success', message: `✅ CUPÓN CANJEADO\nConsumo: ${qrData.pack_name}\nCliente: ${ticketData.name}` });
-      } else {
-        return NextResponse.json({ valid: true, status: 'success', message: `✅ ACCESO PERMITIDO\nNombre: ${ticketData.name}\nEntrada válida para 1 persona.` });
-      }
     }
 
     return NextResponse.json({ valid: false, status: 'invalid', message: '❌ ENTRADA NO APROBADA' });

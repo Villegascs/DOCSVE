@@ -71,6 +71,8 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
 
   const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState('pagomovil');
+  const [selectedBank, setSelectedBank] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
@@ -136,6 +138,19 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     setCurrentStep(1);
     const modalEl = document.querySelector('.modal');
     if (modalEl) modalEl.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handlePaymentMethodChange = (method) => {
+    setPaymentMethod(method);
+    if (method === 'zelle') {
+      setSelectedBank('Zelle');
+    } else if (method === 'binance') {
+      setSelectedBank('Binance');
+    } else if (method === 'pagomovil') {
+      if (selectedBank === 'Zelle' || selectedBank === 'Binance') {
+        setSelectedBank('Bancamiga');
+      }
+    }
   };
 
   const compressImage = (file, maxWidth = 1000, quality = 0.7) => {
@@ -471,51 +486,107 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   </div>
                 </div>
 
-                <div className="payment-info">
-                  <div className="bank-col">
-                    <div className="bank-details">
-                      <h4>PAGO MÓVIL</h4>
-                      <p className="copyable" onClick={() => copyText('0172', 'banco')}>
-                        <span>Banco: Bancamiga (0172)</span>
-                        <span className="copy-badge">{copiedKey === 'banco' ? '✓ Copiado' : 'Copiar'}</span>
-                      </p>
-                      <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>
-                        <span>Cédula: 31253699</span>
-                        <span className="copy-badge">{copiedKey === 'cedula' ? '✓ Copiado' : 'Copiar'}</span>
-                      </p>
-                      <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>
-                        <span>Teléfono: 0424-7509224</span>
-                        <span className="copy-badge">{copiedKey === 'telefono' ? '✓ Copiado' : 'Copiar'}</span>
-                      </p>
-                      <div style={{ marginTop: '0.6rem', padding: '0.45rem 0.65rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                        <div style={{fontSize: '0.78rem', color: '#999'}}>Monto exacto a transferir:</div>
-                        <div style={{fontSize: '1rem', fontWeight: 'bold', color: '#ffffff', marginTop: '0.1rem'}}>Bs. {totalBs}</div>
-                        <div style={{fontSize: '0.72rem', color: '#777', marginTop: '0.15rem'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</div>
+                {/* Selector Desplegable de Métodos de Pago */}
+                <div className="payment-selector-card">
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label htmlFor="paymentMethodSelector">
+                      <span>MÉTODO DE PAGO</span>
+                      <span style={{ fontSize: '0.78rem', color: '#888', fontWeight: 'normal' }}>Selecciona para ver los datos</span>
+                    </label>
+                    <select 
+                      id="paymentMethodSelector"
+                      className="payment-dropdown-select"
+                      value={paymentMethod}
+                      onChange={(e) => handlePaymentMethodChange(e.target.value)}
+                    >
+                      <option value="pagomovil">📱 Pago Móvil (Bancamiga / Bolívares)</option>
+                      <option value="zelle">💵 Zelle (Dólares / USD)</option>
+                      <option value="binance">🪙 Binance Pay (USDT)</option>
+                    </select>
+                  </div>
+
+                  {/* Panel dinámico según el método elegido */}
+                  {paymentMethod === 'pagomovil' && (
+                    <div className="single-payment-details">
+                      <div className="single-payment-header">
+                        <span className="method-tag">DATOS PARA PAGO MÓVIL</span>
+                        <span className="method-rate-tag">Tasa BCV EUR: Bs. {currentRateEUR}</span>
+                      </div>
+                      <div className="payment-items-list">
+                        <div className="payment-item-row" onClick={() => copyText('0172', 'banco')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Banco Destino</span>
+                            <span className="item-row-value">Bancamiga (0172)</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'banco' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                        <div className="payment-item-row" onClick={() => copyText('31253699', 'cedula')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Cédula de Identidad</span>
+                            <span className="item-row-value">31253699</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'cedula' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                        <div className="payment-item-row" onClick={() => copyText('04247509224', 'telefono')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Teléfono</span>
+                            <span className="item-row-value">0424-7509224</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'telefono' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                      </div>
+                      <div className="monto-highlight-card" onClick={() => copyText(totalBs, 'monto')}>
+                        <div>
+                          <div className="monto-title">Monto exacto a transferir:</div>
+                          <div className="monto-number">Bs. {totalBs}</div>
+                        </div>
+                        <span className="item-copy-badge">{copiedKey === 'monto' ? '✓ Copiado' : 'Copiar Monto'}</span>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="bank-col">
-                    <div className="bank-details">
-                      <h4>ZELLE</h4>
-                      <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>
-                        <span style={{wordBreak: 'break-all'}}>contactofabianramirez@gmail.com</span>
-                        <span className="copy-badge">{copiedKey === 'zcorreo' ? '✓' : 'Copiar'}</span>
-                      </p>
-                      <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>
-                        <span>Titular: Fabian Ramirez</span>
-                        <span className="copy-badge">{copiedKey === 'ztitular' ? '✓' : 'Copiar'}</span>
-                      </p>
-                    </div>
+                  )}
 
-                    <div className="bank-details" style={{marginTop: '1.2rem'}}>
-                      <h4>BINANCE (USDT)</h4>
-                      <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>
-                        <span style={{wordBreak: 'break-all'}}>Pay: zbcaj33@gmail.com</span>
-                        <span className="copy-badge">{copiedKey === 'binance' ? '✓' : 'Copiar'}</span>
-                      </p>
+                  {paymentMethod === 'zelle' && (
+                    <div className="single-payment-details">
+                      <div className="single-payment-header">
+                        <span className="method-tag">DATOS PARA ZELLE</span>
+                        <span className="method-rate-tag">Total a pagar: €{grandTotalEUR.toFixed(2)}</span>
+                      </div>
+                      <div className="payment-items-list">
+                        <div className="payment-item-row" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Correo Zelle</span>
+                            <span className="item-row-value" style={{ wordBreak: 'break-all' }}>contactofabianramirez@gmail.com</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'zcorreo' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                        <div className="payment-item-row" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Titular de la cuenta</span>
+                            <span className="item-row-value">Fabian Ramirez</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'ztitular' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
+
+                  {paymentMethod === 'binance' && (
+                    <div className="single-payment-details">
+                      <div className="single-payment-header">
+                        <span className="method-tag">DATOS PARA BINANCE PAY</span>
+                        <span className="method-rate-tag">Total a pagar: {grandTotalEUR.toFixed(2)} USDT</span>
+                      </div>
+                      <div className="payment-items-list">
+                        <div className="payment-item-row" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>
+                          <div className="item-row-left">
+                            <span className="item-row-label">Correo Binance Pay</span>
+                            <span className="item-row-value" style={{ wordBreak: 'break-all' }}>zbcaj33@gmail.com</span>
+                          </div>
+                          <span className="item-copy-badge">{copiedKey === 'binance' ? '✓ Copiado' : 'Copiar'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -532,7 +603,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   <div className="form-group">
                     <label htmlFor="cedula">Cédula de Identidad</label>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
-                      <select id="cedula-prefix" name="cedula-prefix" style={{width: '5rem', flexShrink: 0}}>
+                      <select id="cedula-prefix" name="cedula-prefix" style={{width: '5.2rem', flexShrink: 0}}>
                         <option value="V-">V</option>
                         <option value="E-">E</option>
                         <option value="J-">J</option>
@@ -550,16 +621,28 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                 <div className="form-grid">
                   <div className="form-group">
                     <label htmlFor="bank">Método / Banco Emisor</label>
-                    <select id="bank" name="bank" required>
+                    <select 
+                      id="bank" 
+                      name="bank" 
+                      value={selectedBank}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setSelectedBank(val);
+                        if (val === 'Zelle') setPaymentMethod('zelle');
+                        else if (val === 'Binance') setPaymentMethod('binance');
+                        else if (val !== '') setPaymentMethod('pagomovil');
+                      }}
+                      required
+                    >
                       <option value="">Selecciona una opción</option>
-                      <option value="Zelle">Zelle</option>
-                      <option value="Binance">Binance</option>
+                      <option value="Bancamiga">Bancamiga (Pago Móvil)</option>
                       <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
-                      <option value="Bancamiga">Bancamiga</option>
+                      <option value="Banesco">Banesco</option>
                       <option value="Mercantil">Mercantil</option>
                       <option value="Provincial">Provincial</option>
-                      <option value="Banesco">Banesco</option>
                       <option value="Otro">Otro / Pago Móvil</option>
+                      <option value="Zelle">Zelle</option>
+                      <option value="Binance">Binance</option>
                     </select>
                   </div>
                   <div className="form-group">

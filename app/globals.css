@@ -825,58 +825,212 @@ h4 {
 .payment-form {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
 }
 
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
+    gap: 1.4rem;
 }
 
 @media (max-width: 600px) {
     .form-grid {
         grid-template-columns: 1fr;
+        gap: 0;
     }
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    margin-bottom: 1.4rem;
 }
 
 .form-group label {
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 700;
-    color: #A0A0A0;
+    color: #dedede;
+    margin-bottom: 0.75rem;
+    letter-spacing: 0.3px;
 }
 
 .form-group input,
 .form-group select {
     background: #181818;
-    border: 1px solid #2A2A2A;
-    padding: 0.8rem 1rem;
-    border-radius: 4px;
+    border: 1px solid #2e2e2e;
+    padding: 0.9rem 1.1rem;
+    border-radius: 6px;
     color: white;
     font-family: var(--font-body);
+    font-size: 0.95rem;
     transition: var(--transition-fast);
 }
 
 .form-group input::placeholder {
-    color: #555555;
+    color: #666666;
 }
 
 .form-group select option {
     background-color: #181818;
     color: white;
+    padding: 0.5rem;
 }
 
 .form-group input:focus,
 .form-group select:focus {
     outline: none;
-    border-color: #444444;
-    background: #1C1C1C;
+    border-color: #666666;
+    background: #202020;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.05);
+}
+
+/* ================= Payment Method Dropdown & Card ================= */
+.payment-selector-card {
+    background: #161616;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    padding: 1.4rem;
+    margin-bottom: 1.8rem;
+}
+
+.payment-dropdown-select {
+    width: 100%;
+    background: #1f1f1f;
+    border: 1px solid #383838;
+    padding: 0.95rem 1.1rem;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-dropdown-select:focus {
+    outline: none;
+    border-color: var(--primary-neon);
+    background: #242424;
+}
+
+.single-payment-details {
+    margin-top: 1.2rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    animation: fadeIn 0.25s ease;
+}
+
+.single-payment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.9rem;
+}
+
+.method-tag {
+    font-family: var(--font-heading, sans-serif);
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.method-rate-tag {
+    font-size: 0.8rem;
+    color: #888888;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.25rem 0.6rem;
+    border-radius: 4px;
+}
+
+.payment-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.payment-item-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.payment-item-row:hover {
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(224, 255, 0, 0.3);
+}
+
+.item-row-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.item-row-label {
+    font-size: 0.72rem;
+    color: #888888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.item-row-value {
+    font-size: 0.92rem;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.item-copy-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #888888;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.3rem 0.7rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.payment-item-row:hover .item-copy-badge {
+    color: #000000;
+    background: var(--primary-neon);
+    font-weight: 800;
+}
+
+.monto-highlight-card {
+    background: rgba(224, 255, 0, 0.05);
+    border: 1px solid rgba(224, 255, 0, 0.25);
+    border-radius: 8px;
+    padding: 0.9rem 1.1rem;
+    margin-top: 0.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.monto-highlight-card:hover {
+    background: rgba(224, 255, 0, 0.09);
+    border-color: var(--primary-neon);
+}
+
+.monto-title {
+    font-size: 0.75rem;
+    color: #cccccc;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.monto-number {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #ffffff;
+    margin-top: 0.15rem;
 }
 
 /* ================= Quantity Stepper (- 1 +) ================= */

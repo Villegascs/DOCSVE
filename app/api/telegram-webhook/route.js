@@ -144,9 +144,11 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
 
     for (let i = 0; i < ticketCount; i++) {
       const ticketUuid = uuidv4();
+      const shortId = ticketUuid.split('-')[0];
       await db.collection('qr_codes').add({
         ticket_id: id,
         uuid: ticketUuid,
+        short_id: shortId,
         type: 'ticket',
         status: 'approved',
         created_at: new Date()
@@ -166,7 +168,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         <h3 style="color:#ccc; margin-top: 0;">Entrada ${i + 1} de ${ticketCount}</h3>
         <p style="color:#fff; font-size: 18px;"><strong>Titular:</strong> ${row.name}</p>
         <img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:300px;">
-        <p style="color:#A0A0A0; font-size: 12px;">ID: ${ticketUuid.split('-')[0]}</p>
+        <p style="color:#A0A0A0; font-size: 12px;">ID: ${shortId}</p>
       </div>`;
     }
 
@@ -174,9 +176,11 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     for (let i = 0; i < drinkPacksList.length; i++) {
       const packName = drinkPacksList[i];
       const couponUuid = uuidv4();
+      const shortCouponId = couponUuid.split('-')[0];
       await db.collection('qr_codes').add({
         ticket_id: id,
         uuid: couponUuid,
+        short_id: shortCouponId,
         type: 'coupon',
         pack_name: packName,
         status: 'approved',

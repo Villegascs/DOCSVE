@@ -112,12 +112,12 @@ export default function AdminScanner() {
           <h3>Ingreso Manual</h3>
           <form onSubmit={handleManualScan} style={{marginTop: '1rem'}}>
             <div className="form-group admin-form">
-              <label>Código UUID de la Entrada</label>
+              <label>ID o Código de la Entrada</label>
               <input 
                 type="text" 
                 value={uuidInput}
                 onChange={(e) => setUuidInput(e.target.value)}
-                placeholder="Ej: 550e8400-e29b-41d4-a716-446655440000" 
+                placeholder="Ej: c112f91c" 
                 required 
                 style={{width: '100%', padding: '0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', borderRadius: '4px'}}
               />

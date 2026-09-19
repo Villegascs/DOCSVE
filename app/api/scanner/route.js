@@ -18,7 +18,24 @@ export async function POST(req) {
       return NextResponse.json({ valid: false, message: 'Clave de escáner inválida' }, { status: 401 });
     }
 
-    const qrSnapshot = await db.collection('qr_codes').where('uuid', '==', uuid).limit(1).get();
+    const cleanInput = (uuid || '').trim().toLowerCase();
+
+    // 1. Buscar por UUID exacto
+    let qrSnapshot = await db.collection('qr_codes').where('uuid', '==', cleanInput).limit(1).get();
+
+    // 2. Si no lo encuentra, buscar por short_id (los 8 caracteres que salen debajo del QR)
+    if (qrSnapshot.empty && cleanInput.length === 8) {
+      qrSnapshot = await db.collection('qr_codes').where('short_id', '==', cleanInput).limit(1).get();
+    }
+
+    // 3. Respaldo por prefijo en el campo uuid para entradas anteriores
+    if (qrSnapshot.empty && cleanInput.length >= 6) {
+      qrSnapshot = await db.collection('qr_codes')
+        .where('uuid', '>=', cleanInput)
+        .where('uuid', '<=', cleanInput + '\uf8ff')
+        .limit(1)
+        .get();
+    }
     
     if (qrSnapshot.empty) {
       return NextResponse.json({ valid: false, status: 'invalid', message: '❌ ENTRADA INVÁLIDA (No existe)' });

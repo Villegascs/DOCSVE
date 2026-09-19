@@ -34,24 +34,37 @@ export async function POST(req) {
       const eventData = eventDoc.data();
       const ticketTypeConfig = eventData.ticketTypes?.find(t => t.name === ticketTypeName);
       
-      if (ticketTypeConfig && ticketTypeConfig.limit > 0) {
-        // Calculate sold tickets for this type
-        const ticketsSnap = await db.collection('tickets')
-          .where('event_id', '==', eventId)
-          .where('status', '==', 'approved')
-          .get();
-          
-        let soldForType = 0;
-        ticketsSnap.forEach(tDoc => {
-          const tData = tDoc.data();
-          if ((tData.ticket_type || 'Entrada General') === ticketTypeName) {
-            soldForType += (Number(tData.ticket_count) || 1);
-          }
-        });
-
-        if (soldForType + ticketCount > ticketTypeConfig.limit) {
-          return NextResponse.json({ error: `La entrada "${ticketTypeName}" está agotada o no hay suficientes cupos disponibles.` }, { status: 400 });
+      // Calculate sold tickets for this event
+      const ticketsSnap = await db.collection('tickets')
+        .where('event_id', '==', eventId)
+        .where('status', '==', 'approved')
+        .get();
+        
+      let soldForType = 0;
+      let totalSold = 0;
+      ticketsSnap.forEach(tDoc => {
+        const tData = tDoc.data();
+        const count = Number(tData.ticket_count) || 1;
+        totalSold += count;
+        if ((tData.ticket_type || 'Entrada General') === ticketTypeName) {
+          soldForType += count;
         }
+      });
+
+      // 1. Overall event limit check
+      if (eventData.ticketLimit > 0 && (totalSold + ticketCount) > eventData.ticketLimit) {
+        const availableTotal = Math.max(0, eventData.ticketLimit - totalSold);
+        return NextResponse.json({ 
+          error: `No hay suficientes cupos para este evento. Solo quedan ${availableTotal} entrada(s) disponibles en total.` 
+        }, { status: 400 });
+      }
+
+      // 2. Ticket type limit check
+      if (ticketTypeConfig && ticketTypeConfig.limit > 0 && (soldForType + ticketCount) > ticketTypeConfig.limit) {
+        const availableForType = Math.max(0, ticketTypeConfig.limit - soldForType);
+        return NextResponse.json({ 
+          error: `Solo quedan ${availableForType} entrada(s) disponibles para "${ticketTypeName}".` 
+        }, { status: 400 });
       }
     }
 

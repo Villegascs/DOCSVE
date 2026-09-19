@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { Ticket, Plus, Trash2, Check, Loader2, Wine } from 'lucide-react';
 
 export default function AdminEvents() {
   const [showModal, setShowModal] = useState(false);
@@ -7,6 +8,9 @@ export default function AdminEvents() {
   const [loading, setLoading] = useState(true);
   const [eventToDelete, setEventToDelete] = useState(null);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
   
   const [formData, setFormData] = useState({
     id: null,
@@ -57,6 +61,7 @@ export default function AdminEvents() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSaving(true);
     const method = formData.id ? 'PUT' : 'POST';
     
     try {
@@ -68,13 +73,22 @@ export default function AdminEvents() {
       const data = await res.json();
       
       if (data.success) {
-        setShowModal(false);
-        fetchEvents();
+        setIsSaved(true);
+        setTimeout(() => {
+          setShowModal(false);
+          setIsSaving(false);
+          setIsSaved(false);
+          fetchEvents();
+          setToastMessage(formData.id ? '✓ Evento actualizado correctamente' : '✓ Evento creado con éxito');
+          setTimeout(() => setToastMessage(null), 3000);
+        }, 850);
       } else {
+        setIsSaving(false);
         alert('Error: ' + data.error);
       }
     } catch (error) {
       console.error(error);
+      setIsSaving(false);
       alert('Error guardando evento');
     }
   };
@@ -282,57 +296,194 @@ export default function AdminEvents() {
               </div>
 
               {/* Dynamic Ticket Types Section */}
-              <div className="form-group" style={{marginTop: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                  <h3 style={{fontSize: '1.1rem', margin: 0, color: 'var(--primary-neon)'}}>Tipos de Entradas / Fases</h3>
-                  <button type="button" onClick={addTicketType} className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem'}}>+ Añadir Tipo</button>
+              <div className="dynamic-section-card">
+                <div className="dynamic-section-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
+                    <Ticket size={20} color="var(--primary-neon)" />
+                    <h3 style={{fontSize: '1.05rem', margin: 0, fontWeight: 800, color: 'white', letterSpacing: '0.5px'}}>
+                      TIPOS DE ENTRADAS / FASES
+                    </h3>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={addTicketType} 
+                    className="btn-secondary" 
+                    style={{padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700}}
+                  >
+                    <Plus size={15} /> Añadir Tipo
+                  </button>
                 </div>
                 
                 {(!formData.ticketTypes || formData.ticketTypes.length === 0) ? (
-                  <p style={{fontSize: '0.9rem', color: '#888'}}>Si no agregas tipos, se usará un precio base por defecto.</p>
+                  <p style={{fontSize: '0.88rem', color: '#777', margin: 0, padding: '0.5rem 0'}}>
+                    No hay tipos de entradas configurados. Pulsa "+ Añadir Tipo" para agregar fases de venta.
+                  </p>
                 ) : (
                   formData.ticketTypes.map((type, index) => (
-                    <div key={index} style={{display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-start'}}>
-                      <div style={{flex: 2}}>
-                        <input type="text" placeholder="Nombre (Ej: General Admission)" required value={type.name} onChange={(e) => updateTicketType(index, 'name', e.target.value)} />
+                    <div key={index} className="dynamic-item-row">
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem'}}>
+                        <span style={{fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-neon)', letterSpacing: '1px'}}>
+                          OPCIÓN DE VENTA #{index + 1}
+                        </span>
                       </div>
-                      <div style={{flex: 1}}>
-                        <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={type.price} onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} />
+                      <div className="dynamic-row-grid-tickets" style={{display: 'grid', gridTemplateColumns: '2fr 1.2fr 1.2fr auto', gap: '0.85rem', alignItems: 'flex-start'}}>
+                        <div>
+                          <label className="dynamic-field-label">Nombre entrada:</label>
+                          <input 
+                            type="text" 
+                            placeholder="Ej. General / VIP / Preventa" 
+                            required 
+                            value={type.name} 
+                            onChange={(e) => updateTicketType(index, 'name', e.target.value)} 
+                          />
+                        </div>
+                        <div>
+                          <label className="dynamic-field-label">
+                            Límite de Entradas: <span style={{fontSize: '0.7rem', color: '#777'}}>(0 = ∞)</span>
+                          </label>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            placeholder="Ej: 100" 
+                            required 
+                            value={type.limit !== undefined ? type.limit : 0} 
+                            onChange={(e) => updateTicketType(index, 'limit', Number(e.target.value))} 
+                          />
+                        </div>
+                        <div>
+                          <label className="dynamic-field-label">Precio (€ / $):</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            placeholder="Ej: 5.00" 
+                            required 
+                            value={type.price} 
+                            onChange={(e) => updateTicketType(index, 'price', Number(e.target.value))} 
+                          />
+                        </div>
+                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%'}}>
+                          <label className="dynamic-field-label" style={{visibility: 'hidden', height: '1.1rem'}}>&nbsp;</label>
+                          <button 
+                            type="button" 
+                            onClick={() => removeTicketType(index)} 
+                            className="btn-delete-row" 
+                            title="Eliminar este tipo de entrada"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
-                      <div style={{flex: 1}}>
-                        <input type="number" min="0" placeholder="Límite (0=∞)" required value={type.limit || 0} onChange={(e) => updateTicketType(index, 'limit', Number(e.target.value))} />
-                      </div>
-                      <button type="button" onClick={() => removeTicketType(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
                     </div>
                   ))
                 )}
               </div>
 
               {/* Dynamic Drink Packs Section */}
-              <div className="form-group" style={{marginTop: '2rem', background: 'rgba(255,255,255,0.02)', padding: '1.5rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)'}}>
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                  <h3 style={{fontSize: '1.1rem', margin: 0, color: 'var(--primary-neon)'}}>Combos de Bebidas (Drink Packs)</h3>
-                  <button type="button" onClick={addDrinkPack} className="btn-secondary" style={{padding: '0.4rem 0.8rem', fontSize: '0.8rem'}}>+ Añadir Combo</button>
+              <div className="dynamic-section-card">
+                <div className="dynamic-section-header">
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.6rem'}}>
+                    <Wine size={20} color="var(--primary-neon)" />
+                    <h3 style={{fontSize: '1.05rem', margin: 0, fontWeight: 800, color: 'white', letterSpacing: '0.5px'}}>
+                      COMBOS DE BEBIDAS (DRINK PACKS)
+                    </h3>
+                  </div>
+                  <button 
+                    type="button" 
+                    onClick={addDrinkPack} 
+                    className="btn-secondary" 
+                    style={{padding: '0.45rem 0.9rem', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700}}
+                  >
+                    <Plus size={15} /> Añadir Combo
+                  </button>
                 </div>
                 
                 {(!formData.drinkPacks || formData.drinkPacks.length === 0) ? (
-                  <p style={{fontSize: '0.9rem', color: '#888'}}>Sin combos configurados para este evento.</p>
+                  <p style={{fontSize: '0.88rem', color: '#777', margin: 0, padding: '0.5rem 0'}}>
+                    Sin combos configurados para este evento.
+                  </p>
                 ) : (
                   formData.drinkPacks.map((pack, index) => (
-                    <div key={index} style={{display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'flex-start'}}>
-                      <div style={{flex: 2}}>
-                        <input type="text" placeholder="Nombre (Ej: 3 Waters)" required value={pack.name} onChange={(e) => updateDrinkPack(index, 'name', e.target.value)} />
+                    <div key={index} className="dynamic-item-row">
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem'}}>
+                        <span style={{fontSize: '0.72rem', fontWeight: 800, color: 'var(--primary-neon)', letterSpacing: '1px'}}>
+                          COMBO #{index + 1}
+                        </span>
                       </div>
-                      <div style={{flex: 1}}>
-                        <input type="number" step="0.01" min="0" placeholder="Precio (€/$)" required value={pack.price} onChange={(e) => updateDrinkPack(index, 'price', Number(e.target.value))} />
+                      <div className="dynamic-row-grid-drinks" style={{display: 'grid', gridTemplateColumns: '2fr 1.2fr auto', gap: '0.85rem', alignItems: 'flex-start'}}>
+                        <div>
+                          <label className="dynamic-field-label">Nombre del Combo:</label>
+                          <input 
+                            type="text" 
+                            placeholder="Ej: 3 Red Bulls / Pack Cervezas" 
+                            required 
+                            value={pack.name} 
+                            onChange={(e) => updateDrinkPack(index, 'name', e.target.value)} 
+                          />
+                        </div>
+                        <div>
+                          <label className="dynamic-field-label">Precio (€ / $):</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            min="0" 
+                            placeholder="Ej: 15.00" 
+                            required 
+                            value={pack.price} 
+                            onChange={(e) => updateDrinkPack(index, 'price', Number(e.target.value))} 
+                          />
+                        </div>
+                        <div style={{display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%'}}>
+                          <label className="dynamic-field-label" style={{visibility: 'hidden', height: '1.1rem'}}>&nbsp;</label>
+                          <button 
+                            type="button" 
+                            onClick={() => removeDrinkPack(index)} 
+                            className="btn-delete-row" 
+                            title="Eliminar este combo"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
-                      <button type="button" onClick={() => removeDrinkPack(index)} className="btn-secondary" style={{padding: '0.6rem 0.8rem', color: '#ff4444', borderColor: '#ff4444', background: 'transparent'}}>X</button>
                     </div>
                   ))
                 )}
               </div>
 
-              <button type="submit" className="btn-primary" style={{marginTop: '1rem'}}>{formData.id ? 'ACTUALIZAR EVENTO' : 'GUARDAR EVENTO'}</button>
+              <button 
+                type="submit" 
+                className="btn-primary" 
+                style={{
+                  marginTop: '1.5rem', 
+                  width: '100%',
+                  padding: '1.1rem',
+                  fontSize: '1rem',
+                  fontWeight: '900',
+                  letterSpacing: '1px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.6rem',
+                  background: isSaved ? '#10b981' : (isSaving ? '#262626' : 'var(--primary-neon)'),
+                  color: isSaved ? '#ffffff' : (isSaving ? '#aaaaaa' : '#000000'),
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                disabled={isSaving || isSaved}
+              >
+                {isSaved ? (
+                  <>
+                    <Check size={22} strokeWidth={3} className="check-anim" />
+                    ¡ACTUALIZADO CON ÉXITO!
+                  </>
+                ) : isSaving ? (
+                  <>
+                    <Loader2 size={19} className="spin-anim" />
+                    GUARDANDO CAMBIOS...
+                  </>
+                ) : (
+                  formData.id ? 'ACTUALIZAR EVENTO' : 'GUARDAR EVENTO'
+                )}
+              </button>
             </form>
           </div>
         </div>
@@ -348,6 +499,13 @@ export default function AdminEvents() {
               <button className="btn-primary" style={{backgroundColor: '#ff4444', color: 'white'}} onClick={confirmDelete}>Sí, Eliminar</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="admin-toast">
+          <Check size={18} strokeWidth={3} />
+          <span>{toastMessage}</span>
         </div>
       )}
     </>

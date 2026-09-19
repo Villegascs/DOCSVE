@@ -2,20 +2,61 @@
 import { useState, useEffect } from 'react';
 
 export default function PurchaseModal({ event, onClose }) {
-  const [ticketCount, setTicketCount] = useState(1);
+  // Helper to calculate available tickets for a ticket type and event
+  const calculateAvailableForType = (type) => {
+    let max = 20; // Default limit per purchase
+
+    if (type && type.limit > 0) {
+      const sold = (event.soldTicketsByType && event.soldTicketsByType[type.name]) || 0;
+      const remainingType = Math.max(0, type.limit - sold);
+      max = Math.min(max, remainingType);
+    }
+
+    if (event.ticketLimit > 0) {
+      const soldTotal = event.soldTickets || 0;
+      const remainingEvent = Math.max(0, event.ticketLimit - soldTotal);
+      max = Math.min(max, remainingEvent);
+    }
+
+    return max;
+  };
+
   const [selectedTicketType, setSelectedTicketType] = useState(() => {
     if (event.ticketTypes && event.ticketTypes.length > 0) {
-      // Default to first available ticket type
-      const availableType = event.ticketTypes.find(t => !t.limit || (event.soldTicketsByType && (event.soldTicketsByType[t.name] || 0) < t.limit));
+      // Default to first available ticket type with stock
+      const availableType = event.ticketTypes.find(t => calculateAvailableForType(t) > 0);
       return availableType || event.ticketTypes[0];
     }
     return null;
   });
+
+  const maxAvailableTickets = calculateAvailableForType(selectedTicketType);
+
+  const [ticketCount, setTicketCount] = useState(() => {
+    const available = calculateAvailableForType(
+      event.ticketTypes && event.ticketTypes.length > 0 
+        ? (event.ticketTypes.find(t => calculateAvailableForType(t) > 0) || event.ticketTypes[0])
+        : null
+    );
+    return available > 0 ? 1 : 0;
+  });
+
   const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
   const [copiedKey, setCopiedKey] = useState(null);
+
+  // Sync ticketCount when selected ticket type changes or if maxAvailableTickets changes
+  useEffect(() => {
+    if (maxAvailableTickets <= 0) {
+      setTicketCount(0);
+    } else if (ticketCount > maxAvailableTickets) {
+      setTicketCount(maxAvailableTickets);
+    } else if (ticketCount < 1) {
+      setTicketCount(1);
+    }
+  }, [selectedTicketType, maxAvailableTickets]);
 
   useEffect(() => {
     async function fetchRate() {
@@ -86,6 +127,16 @@ export default function PurchaseModal({ event, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (maxAvailableTickets <= 0) {
+      alert('Lo sentimos, no hay entradas disponibles para esta selección.');
+      return;
+    }
+
+    if (ticketCount > maxAvailableTickets) {
+      alert(`Solo puedes comprar un máximo de ${maxAvailableTickets} entrada(s) disponibles.`);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -147,7 +198,8 @@ export default function PurchaseModal({ event, onClose }) {
                 <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Selecciona el Tipo de Entrada:</h4>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
                   {event.ticketTypes.map((type, index) => {
-                    const isSoldOut = type.limit > 0 && event.soldTicketsByType && (event.soldTicketsByType[type.name] || 0) >= type.limit;
+                    const availableForThisType = calculateAvailableForType(type);
+                    const isSoldOut = availableForThisType <= 0;
                     return (
                     <label key={index} style={{
                       display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
@@ -166,7 +218,13 @@ export default function PurchaseModal({ event, onClose }) {
                           style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem', cursor: isSoldOut ? 'not-allowed' : 'pointer'}}
                         />
                         <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>
-                          {type.name} {isSoldOut && <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>}
+                          {type.name} {isSoldOut ? (
+                            <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>
+                          ) : (type.limit > 0 || event.ticketLimit > 0) && (
+                            <span style={{color: '#888', fontSize: '0.8rem', marginLeft: '0.5rem'}}>
+                              ({availableForThisType} {availableForThisType === 1 ? 'disponible' : 'disponibles'})
+                            </span>
+                          )}
                         </span>
                       </div>
                       <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
@@ -238,16 +296,32 @@ export default function PurchaseModal({ event, onClose }) {
 
             <form className="payment-form" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="ticketCount">Número de Entradas</label>
-                <input 
-                  type="number" 
+                <label htmlFor="ticketCount" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <span>Número de Entradas</span>
+                  {maxAvailableTickets > 0 && (
+                    <span style={{fontSize: '0.85rem', color: 'var(--primary-neon)', fontWeight: '600'}}>
+                      {maxAvailableTickets} {maxAvailableTickets === 1 ? 'disponible' : 'disponibles'}
+                    </span>
+                  )}
+                </label>
+                <select 
                   id="ticketCount" 
                   name="ticketCount"
-                  min="1" max="20" 
                   value={ticketCount} 
                   onChange={(e) => setTicketCount(Number(e.target.value))}
+                  disabled={maxAvailableTickets <= 0}
                   required 
-                />
+                >
+                  {maxAvailableTickets <= 0 ? (
+                    <option value="0">Agotado (0 disponibles)</option>
+                  ) : (
+                    Array.from({ length: maxAvailableTickets }, (_, i) => i + 1).map(num => (
+                      <option key={num} value={num}>
+                        {num} {num === 1 ? 'entrada' : 'entradas'} {num === maxAvailableTickets && maxAvailableTickets < 20 ? '(Máximo disponible)' : ''}
+                      </option>
+                    ))
+                  )}
+                </select>
               </div>
 
               <div className="form-group">
@@ -305,8 +379,13 @@ export default function PurchaseModal({ event, onClose }) {
                 <input type="file" id="receipt" name="receipt" accept="image/*" required />
               </div>
 
-              <button type="submit" className="btn-primary full-width" style={{marginTop: '0.5rem'}} disabled={loading}>
-                {loading ? 'ENVIANDO...' : 'ENVIAR VERIFICACIÓN'}
+              <button 
+                type="submit" 
+                className="btn-primary full-width" 
+                style={{marginTop: '0.5rem'}} 
+                disabled={loading || maxAvailableTickets <= 0}
+              >
+                {loading ? 'ENVIANDO...' : (maxAvailableTickets <= 0 ? 'ENTRADAS AGOTADAS' : 'ENVIAR VERIFICACIÓN')}
               </button>
             </form>
           </>

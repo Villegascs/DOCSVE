@@ -4,7 +4,7 @@ const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
   secure: true,
-  auth: { user: 'docssweb@gmail.com', pass: 'ffrsimncoawtvkvo' } // without spaces
+  auth: { user: 'docssweb@gmail.com', pass: 'bgenbmglpdxidhdd' } // without spaces
 });
 
 async function run() {

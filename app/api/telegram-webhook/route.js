@@ -48,43 +48,17 @@ export async function POST(req) {
   try {
     const body = await req.json();
 
-    // Evento al añadir el bot a un nuevo grupo
-    if (body.my_chat_member && token) {
-      const chat = body.my_chat_member.chat;
-      const status = body.my_chat_member.new_chat_member?.status;
-      if (['member', 'administrator'].includes(status)) {
-        await sendTgMessage(chat.id, `👋 <b>¡Hola equipo de DÖCS!</b>\n\nEl bot ya está en este grupo para notificar nuevos pagos y gestionar aprobaciones en equipo.\n\n🆔 <b>ID de este grupo:</b>\n<code>${chat.id}</code>\n\n<b>Pasos para activarlo:</b>\n1. Haz al bot <b>Administrador</b> de este grupo.\n2. Copia el ID de arriba y agrégalo a <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel (si tienes otros IDs, sepáralos con comas).`, { parse_mode: 'HTML' }).catch(console.error);
-        return NextResponse.json({ success: true });
-      }
-    }
-
-    if (body.message && body.message.new_chat_members && token) {
-      const chatId = body.message.chat.id.toString();
-      const isBotAdded = body.message.new_chat_members.some(member => member.is_bot);
-      if (isBotAdded) {
-        await sendTgMessage(chatId, `👋 <b>¡Hola equipo de DÖCS!</b>\n\nEl bot ya está listo en este grupo.\n\n🆔 <b>ID de este grupo:</b>\n<code>${chatId}</code>\n\n<b>Pasos para activarlo:</b>\n1. Dale permisos de <b>Administrador</b> al bot.\n2. Copia el ID y agrégalo a <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel.`, { parse_mode: 'HTML' }).catch(console.error);
-        return NextResponse.json({ success: true });
-      }
-    }
-
     if (body.callback_query && token) {
       const query = body.callback_query;
       const [action, id] = query.data.split('_');
       const chatId = query.message.chat.id;
       const messageId = query.message.message_id;
       const callbackQueryId = query.id;
-      const actorName = query.from?.username ? `@${query.from.username}` : (query.from?.first_name || 'Admin');
-
-      const adminChats = (process.env.TELEGRAM_ADMIN_CHAT_ID || '').split(',').map(id => id.trim()).filter(Boolean);
-      if (adminChats.length > 0 && !adminChats.includes(chatId.toString())) {
-        await answerTgCallbackQuery(callbackQueryId, { text: "No tienes autorización para este bot.", show_alert: true }).catch(console.error);
-        return NextResponse.json({ success: true });
-      }
 
       if (action === 'approve') {
-        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId, actorName);
+        await handleApprove(id, chatId, messageId, query.message.caption, callbackQueryId);
       } else if (action === 'reject') {
-        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId, actorName);
+        await handleReject(id, chatId, messageId, query.message.caption, callbackQueryId);
       } else if (action === 'expVentas') {
         await handleExport(id, chatId, callbackQueryId, 'tickets');
       } else if (action === 'expScan') {
@@ -92,30 +66,23 @@ export async function POST(req) {
       }
     } else if (body.message && body.message.text && token) {
       const chatId = body.message.chat.id.toString();
-      const rawText = body.message.text.trim();
-      const text = rawText.split('@')[0].toLowerCase();
-
-      // Comando libre para conocer el ID del grupo o chat
-      if (text === '/id' || text === '/chatid' || text === '/start') {
-        await sendTgMessage(chatId, `🆔 <b>ID de este chat / grupo:</b>\n<code>${chatId}</code>\n\nCopia este ID y agrégalo a la variable <code>TELEGRAM_ADMIN_CHAT_ID</code> en Vercel (puedes separar varios IDs con comas).`, { parse_mode: 'HTML' });
-        return NextResponse.json({ success: true });
-      }
-
       const adminChats = (process.env.TELEGRAM_ADMIN_CHAT_ID || '').split(',').map(id => id.trim());
-      
-      // Restringir comandos a administradores o grupos autorizados
+
+      // Restrict commands to admin chat IDs (or group where bot is)
       if (adminChats.includes(chatId)) {
+        const text = body.message.text.trim();
+
         if (text === '/ventas' || text === '/escaneadas') {
           const action = text === '/ventas' ? 'expVentas' : 'expScan';
           const eventsSnap = await db.collection('events').where('status', '==', 'active').get();
-          
+
           const buttons = [];
           buttons.push([{ text: 'Todos los Eventos', callback_data: `${action}_all` }]);
-          
+
           eventsSnap.forEach(doc => {
             buttons.push([{ text: doc.data().title, callback_data: `${action}_${doc.id}` }]);
           });
-          
+
           await sendTgMessage(chatId, `¿De qué evento deseas exportar ${text === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
             reply_markup: { inline_keyboard: buttons }
           });
@@ -130,14 +97,14 @@ export async function POST(req) {
   }
 }
 
-async function handleApprove(id, chatId, messageId, caption, callbackQueryId, actorName = '') {
+async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
   try {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
-    
+
     if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
     const row = ticketDoc.data();
-    
+
     if (row.status !== 'pending') {
       answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
       return;
@@ -145,8 +112,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId, ac
 
     await ticketRef.update({ status: 'approved' });
 
-    const who = actorName ? ` por <b>${actorName}</b>` : '';
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO${who}</b>`, {
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
     await answerTgCallbackQuery(callbackQueryId).catch(console.error);
@@ -167,18 +133,18 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId, ac
         created_at: new Date()
       });
 
-      const qrDataUrl = await QRCode.toDataURL(ticketUuid, { 
-        color: { dark: '#000000', light: '#FFFFFF' }, 
+      const qrDataUrl = await QRCode.toDataURL(ticketUuid, {
+        color: { dark: '#000000', light: '#FFFFFF' },
         margin: 2,
         width: 350
       });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      attachments.push({ filename: `entrada-docs-${i+1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
-      
+      attachments.push({ filename: `entrada-docs-${i + 1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
+
       qrHtml += `
       <div style="margin: 20px auto; max-width: 400px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333;">
-        <h3 style="color:#ccc; margin-top: 0;">Entrada ${i+1} de ${ticketCount}</h3>
+        <h3 style="color:#ccc; margin-top: 0;">Entrada ${i + 1} de ${ticketCount}</h3>
         <p style="color:#fff; font-size: 18px;"><strong>Titular:</strong> ${row.name}</p>
         <img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:300px;">
         <p style="color:#A0A0A0; font-size: 12px;">ID: ${ticketUuid.split('-')[0]}</p>
@@ -198,14 +164,14 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId, ac
         created_at: new Date()
       });
 
-      const qrDataUrl = await QRCode.toDataURL(couponUuid, { 
-        color: { dark: '#000000', light: '#FFFFFF' }, 
+      const qrDataUrl = await QRCode.toDataURL(couponUuid, {
+        color: { dark: '#000000', light: '#FFFFFF' },
         margin: 2,
         width: 350
       });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
-      
-      attachments.push({ filename: `cupon-${i+1}.png`, content: qrBuffer, cid: `coupon_image_${i}` });
+
+      attachments.push({ filename: `cupon-${i + 1}.png`, content: qrBuffer, cid: `coupon_image_${i}` });
 
       couponHtml += `
       <div style="margin: 30px auto; max-width: 400px; display: table; width: 100%; background-color: #ef4444; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
@@ -254,12 +220,12 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId, ac
   }
 }
 
-async function handleReject(id, chatId, messageId, caption, callbackQueryId, actorName = '') {
+async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
   try {
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
     if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
-    
+
     const row = ticketDoc.data();
     if (row.status !== 'pending') {
       answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
@@ -267,9 +233,8 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId, act
     }
 
     await ticketRef.update({ status: 'rejected' });
-    
-    const who = actorName ? ` por <b>${actorName}</b>` : '';
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO${who}</b>`, {
+
+    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
       parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
     }).catch(console.error);
     await answerTgCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
@@ -281,25 +246,25 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId, act
 async function handleExport(eventId, chatId, callbackQueryId, type) {
   try {
     await answerTgCallbackQuery(callbackQueryId, { text: "Generando reporte..." });
-    
+
     let csv = '';
     let filename = '';
 
     if (type === 'tickets') {
       let query = db.collection('tickets');
       if (eventId !== 'all') query = query.where('event_id', '==', eventId);
-      
+
       const snap = await query.get();
       let tickets = [];
       snap.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
-      
+
       // Sort in memory to avoid composite index requirement
       tickets.sort((a, b) => {
         const tA = a.created_at?._seconds || 0;
         const tB = b.created_at?._seconds || 0;
         return tB - tA;
       });
-      
+
       csv = convertTicketsToCSV(tickets);
       filename = `ventas_${eventId}.csv`;
     } else {

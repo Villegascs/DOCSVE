@@ -52,7 +52,8 @@ export default function EventsGrid() {
             ) : events.length === 0 ? (
               <p style={{textAlign: 'center', width: '100%', color: '#888'}}>No hay eventos disponibles en este momento.</p>
             ) : events.map((evt) => {
-              const isSoldOut = evt.ticketLimit > 0 && evt.soldTickets >= evt.ticketLimit;
+              const allTypesSoldOut = evt.ticketTypes && evt.ticketTypes.length > 0 && evt.ticketTypes.every(t => t.limit > 0 && (evt.soldTicketsByType?.[t.name] || 0) >= t.limit);
+              const isSoldOut = (evt.ticketLimit > 0 && evt.soldTickets >= evt.ticketLimit) || allTypesSoldOut;
               const isDisabled = evt.status === 'disabled' || evt.status === 'archived' || isSoldOut;
               
               return (

@@ -70,6 +70,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   });
 
   const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
+  const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
@@ -115,6 +116,26 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     setTimeout(() => setCopiedKey(null), 2000);
+  };
+
+  const handleContinueToPayment = () => {
+    if (maxAvailableTickets <= 0) {
+      alert('Lo sentimos, no hay entradas disponibles para esta selección.');
+      return;
+    }
+    if (ticketCount <= 0 || ticketCount > maxAvailableTickets) {
+      alert(`Debes seleccionar entre 1 y ${maxAvailableTickets} entradas disponibles.`);
+      return;
+    }
+    setCurrentStep(2);
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleBackToStep1 = () => {
+    setCurrentStep(1);
+    const modalEl = document.querySelector('.modal');
+    if (modalEl) modalEl.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const compressImage = (file, maxWidth = 1000, quality = 0.7) => {
@@ -183,13 +204,13 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
         }
       }
 
-      formData.append('ticketCount', ticketCount);
-      formData.append('totalBs', totalBs);
-      formData.append('totalEur', grandTotalEUR);
-      formData.append('eventId', event.id);
-      formData.append('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
+      formData.set('ticketCount', ticketCount);
+      formData.set('totalBs', totalBs);
+      formData.set('totalEur', grandTotalEUR);
+      formData.set('eventId', event.id);
+      formData.set('ticketTypeName', selectedTicketType ? selectedTicketType.name : 'Entrada General');
       if (selectedDrinkPacks.length > 0) {
-        formData.append('drinkPacks', selectedDrinkPacks.join(', '));
+        formData.set('drinkPacks', selectedDrinkPacks.join(', '));
       }
 
       const response = await fetch('/api/tickets/request', {
@@ -219,213 +240,315 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
         
         {!success ? (
           <>
-            <h2 className="modal-main-title">VERIFICACIÓN DE PAGO</h2>
-            <p className="modal-subtitle">Para asegurar tus entradas a <strong>{event.title}</strong>, realiza el pago vía Pago Móvil, Zelle o Binance y envía el comprobante.</p>
-            
-            {event.ticketTypes && event.ticketTypes.length > 0 && (
-              <div className="ticket-types-container" style={{marginBottom: '2rem'}}>
-                <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Selecciona el Tipo de Entrada:</h4>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
-                  {event.ticketTypes.map((type, index) => {
-                    const availableForThisType = calculateAvailableForType(type);
-                    const isSoldOut = availableForThisType <= 0;
-                    return (
-                    <label key={index} style={{
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                      background: selectedTicketType?.name === type.name ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
-                      padding: '1rem 1.5rem', borderRadius: '8px', border: `1px solid ${selectedTicketType?.name === type.name ? 'var(--primary-neon)' : '#222'}`,
-                      cursor: isSoldOut ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
-                      opacity: isSoldOut ? 0.5 : 1
-                    }}>
-                      <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                        <input 
-                          type="radio" 
-                          name="ticketTypeSelection" 
-                          checked={selectedTicketType?.name === type.name}
-                          onChange={() => { if (!isSoldOut) setSelectedTicketType(type); }}
-                          disabled={isSoldOut}
-                          style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem', cursor: isSoldOut ? 'not-allowed' : 'pointer'}}
-                        />
-                        <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>
-                          {type.name} {isSoldOut ? (
-                            <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>
-                          ) : (type.limit > 0 || event.ticketLimit > 0) && (
-                            <span style={{color: '#888', fontSize: '0.8rem', marginLeft: '0.5rem'}}>
-                              ({availableForThisType} {availableForThisType === 1 ? 'disponible' : 'disponibles'})
-                            </span>
-                          )}
-                        </span>
-                      </div>
-                      <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
-                    </label>
-                  )})}
-                </div>
-              </div>
-            )}
+            {/* Stepper Navigation */}
+            <div className="checkout-stepper">
+              <button 
+                type="button" 
+                className={`stepper-step ${currentStep === 1 ? 'active' : 'completed'}`}
+                onClick={handleBackToStep1}
+              >
+                <span className="step-number">1.</span>
+                <span className="step-full">Selección de Entradas y Servicios</span>
+                <span className="step-short">Entradas y Servicios</span>
+              </button>
 
-            {event.drinkPacks && event.drinkPacks.length > 0 && (
-              <div className="ticket-types-container" style={{marginBottom: '2rem'}}>
-                <h4 style={{marginBottom: '1rem', color: 'var(--text-secondary)'}}>Combos de Bebidas (Opcional):</h4>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
-                  {event.drinkPacks.map((pack, index) => {
-                    const isSelected = selectedDrinkPacks.includes(pack.name);
-                    return (
-                      <label key={index} style={{
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
-                        background: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
-                        padding: '1rem 1.5rem', borderRadius: '8px', border: `1px solid ${isSelected ? 'var(--primary-neon)' : '#222'}`,
-                        cursor: 'pointer', transition: 'all 0.2s'
-                      }}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
-                          <input 
-                            type="checkbox" 
-                            checked={isSelected}
-                            onChange={() => {
-                              if (isSelected) {
-                                setSelectedDrinkPacks(selectedDrinkPacks.filter(name => name !== pack.name));
-                              } else {
-                                setSelectedDrinkPacks([...selectedDrinkPacks, pack.name]);
-                              }
-                            }}
-                            style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem'}}
-                          />
-                          <span style={{fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? 'white' : '#ccc'}}>{pack.name}</span>
-                        </div>
-                        <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{pack.price}</span>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-            
-            <div className="payment-info">
-              <div className="bank-col">
-                <div className="bank-details">
-                  <h4>PAGO MÓVIL</h4>
-                  <p className="copyable" onClick={() => copyText('0172', 'banco')}>Banco: Bancamiga (0172) {copiedKey === 'banco' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                  <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>Cédula: 31253699 {copiedKey === 'cedula' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                  <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>Teléfono: 0424-7509224 {copiedKey === 'telefono' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                  <p>Monto: <strong style={{color: 'white'}}>Bs. {totalBs}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span></p>
-                </div>
-                <div className="bank-details" style={{marginTop: '1.5rem'}}>
-                  <h4>BINANCE (USDT)</h4>
-                  <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>Correo (Binance Pay): zbcaj33@gmail.com {copiedKey === 'binance' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                </div>
-              </div>
-              
-              <div className="bank-col">
-                <div className="bank-details">
-                  <h4>ZELLE</h4>
-                  <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>Correo: contactofabianramirez@gmail.com {copiedKey === 'zcorreo' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                  <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>Titular: Fabian Ramirez {copiedKey === 'ztitular' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                </div>
-              </div>
+              <div className={`stepper-divider ${currentStep === 2 ? 'completed' : ''}`} />
+
+              <button 
+                type="button" 
+                className={`stepper-step ${currentStep === 2 ? 'active' : ''}`}
+                onClick={() => {
+                  if (maxAvailableTickets > 0 && ticketCount > 0) {
+                    handleContinueToPayment();
+                  }
+                }}
+                style={{ cursor: (maxAvailableTickets > 0 && ticketCount > 0) ? 'pointer' : 'default' }}
+              >
+                <span className="step-number">2.</span>
+                <span className="step-full">Verificación de Pago</span>
+                <span className="step-short">Verificación</span>
+              </button>
             </div>
 
             <form className="payment-form" onSubmit={handleSubmit}>
-              <div className="form-group">
-                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem'}}>
-                  <label htmlFor="ticketCount" style={{margin: 0}}>Número de Entradas</label>
-                  {maxAvailableTickets > 0 && (
-                    <span style={{fontSize: '0.85rem', color: 'var(--primary-neon)', fontWeight: '600'}}>
-                      {maxAvailableTickets} {maxAvailableTickets === 1 ? 'disponible' : 'disponibles'}
-                    </span>
-                  )}
-                </div>
+              {/* ================= PASO 1: SELECCIÓN DE ENTRADAS Y SERVICIOS ================= */}
+              <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
+                <h2 className="modal-main-title">SELECCIÓN DE ENTRADAS</h2>
+                <p className="modal-subtitle">Para asegurar tu asistencia a <strong>{event.title}</strong>, selecciona el tipo de entrada, la cantidad y los combos de bebidas opcionales.</p>
+                
+                {event.ticketTypes && event.ticketTypes.length > 0 && (
+                  <div className="ticket-types-container" style={{marginBottom: '1.8rem'}}>
+                    <h4 style={{marginBottom: '0.8rem', color: 'var(--text-secondary)'}}>Selecciona el Tipo de Entrada:</h4>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
+                      {event.ticketTypes.map((type, index) => {
+                        const availableForThisType = calculateAvailableForType(type);
+                        const isSoldOut = availableForThisType <= 0;
+                        return (
+                        <label key={index} style={{
+                          display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                          background: selectedTicketType?.name === type.name ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
+                          padding: '1rem 1.4rem', borderRadius: '8px', border: `1px solid ${selectedTicketType?.name === type.name ? 'var(--primary-neon)' : '#222'}`,
+                          cursor: isSoldOut ? 'not-allowed' : 'pointer', transition: 'all 0.2s',
+                          opacity: isSoldOut ? 0.5 : 1
+                        }}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                            <input 
+                              type="radio" 
+                              name="ticketTypeSelection" 
+                              checked={selectedTicketType?.name === type.name}
+                              onChange={() => { if (!isSoldOut) setSelectedTicketType(type); }}
+                              disabled={isSoldOut}
+                              style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem', cursor: isSoldOut ? 'not-allowed' : 'pointer'}}
+                            />
+                            <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>
+                              {type.name} {isSoldOut ? (
+                                <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>
+                              ) : (type.limit > 0 || event.ticketLimit > 0) && (
+                                <span style={{color: '#888', fontSize: '0.8rem', marginLeft: '0.5rem'}}>
+                                  ({availableForThisType} {availableForThisType === 1 ? 'disponible' : 'disponibles'})
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{type.price}</span>
+                        </label>
+                      )})}
+                    </div>
+                  </div>
+                )}
 
-                <div className="quantity-stepper">
-                  <button 
-                    type="button" 
-                    className="stepper-btn"
-                    onClick={() => setTicketCount(prev => Math.max(1, prev - 1))}
-                    disabled={ticketCount <= 1 || maxAvailableTickets <= 0}
-                    aria-label="Disminuir cantidad"
-                  >
-                    −
-                  </button>
-                  <div className="stepper-value">
-                    <span className="stepper-number">{maxAvailableTickets <= 0 ? 0 : ticketCount}</span>
-                    {maxAvailableTickets <= 0 && (
-                      <span className="stepper-unit" style={{color: '#ff4444'}}>Agotado</span>
+                <div className="form-group" style={{marginBottom: '1.8rem'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem'}}>
+                    <label htmlFor="ticketCount" style={{margin: 0}}>Número de Entradas</label>
+                    {maxAvailableTickets > 0 && (
+                      <span style={{fontSize: '0.85rem', color: 'var(--primary-neon)', fontWeight: '600'}}>
+                        {maxAvailableTickets} {maxAvailableTickets === 1 ? 'disponible' : 'disponibles'}
+                      </span>
                     )}
                   </div>
-                  <button 
-                    type="button" 
-                    className="stepper-btn"
-                    onClick={() => setTicketCount(prev => Math.min(maxAvailableTickets, prev + 1))}
-                    disabled={ticketCount >= maxAvailableTickets || maxAvailableTickets <= 0}
-                    aria-label="Aumentar cantidad"
-                  >
-                    +
-                  </button>
-                </div>
-                <input type="hidden" id="ticketCount" name="ticketCount" value={ticketCount} />
-              </div>
 
-              <div className="form-group">
-                <label htmlFor="name">Nombre y Apellido</label>
-                <input type="text" id="name" name="name" placeholder="Ej. Carlos Pérez" required />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="email">Correo Electrónico (Para recibir las entradas)</label>
-                <input type="email" id="email" name="email" placeholder="tu@correo.com" required />
-              </div>
-
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="cedula">Cédula de Identidad</label>
-                  <div style={{display: 'flex', gap: '0.5rem'}}>
-                    <select id="cedula-prefix" name="cedula-prefix" style={{width: '5rem', flexShrink: 0}}>
-                      <option value="V-">V</option>
-                      <option value="E-">E</option>
-                      <option value="J-">J</option>
-                      <option value="P-">P</option>
-                    </select>
-                    <input type="text" id="cedula" name="cedula" placeholder="12345678" style={{flexGrow: 1}} required pattern="[0-9]*" />
+                  <div className="quantity-stepper">
+                    <button 
+                      type="button" 
+                      className="stepper-btn"
+                      onClick={() => setTicketCount(prev => Math.max(1, prev - 1))}
+                      disabled={ticketCount <= 1 || maxAvailableTickets <= 0}
+                      aria-label="Disminuir cantidad"
+                    >
+                      −
+                    </button>
+                    <div className="stepper-value">
+                      <span className="stepper-number">{maxAvailableTickets <= 0 ? 0 : ticketCount}</span>
+                      {maxAvailableTickets <= 0 && (
+                        <span className="stepper-unit" style={{color: '#ff4444'}}>Agotado</span>
+                      )}
+                    </div>
+                    <button 
+                      type="button" 
+                      className="stepper-btn"
+                      onClick={() => setTicketCount(prev => Math.min(maxAvailableTickets, prev + 1))}
+                      disabled={ticketCount >= maxAvailableTickets || maxAvailableTickets <= 0}
+                      aria-label="Aumentar cantidad"
+                    >
+                      +
+                    </button>
                   </div>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="phone">Teléfono de Contacto</label>
-                  <input type="tel" id="phone" name="phone" required placeholder="04141234567" pattern="[0-9]*" />
+
+                {event.drinkPacks && event.drinkPacks.length > 0 && (
+                  <div className="ticket-types-container" style={{marginBottom: '1.8rem'}}>
+                    <h4 style={{marginBottom: '0.8rem', color: 'var(--text-secondary)'}}>Combos de Bebidas (Opcional):</h4>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.8rem'}}>
+                      {event.drinkPacks.map((pack, index) => {
+                        const isSelected = selectedDrinkPacks.includes(pack.name);
+                        return (
+                          <label key={index} style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                            background: isSelected ? 'rgba(255,255,255,0.1)' : 'rgba(10,10,10,0.5)', 
+                            padding: '1rem 1.4rem', borderRadius: '8px', border: `1px solid ${isSelected ? 'var(--primary-neon)' : '#222'}`,
+                            cursor: 'pointer', transition: 'all 0.2s'
+                          }}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '1rem'}}>
+                              <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={() => {
+                                  if (isSelected) {
+                                    setSelectedDrinkPacks(selectedDrinkPacks.filter(name => name !== pack.name));
+                                  } else {
+                                    setSelectedDrinkPacks([...selectedDrinkPacks, pack.name]);
+                                  }
+                                }}
+                                style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem'}}
+                              />
+                              <span style={{fontWeight: isSelected ? 'bold' : 'normal', color: isSelected ? 'white' : '#ccc'}}>{pack.name}</span>
+                            </div>
+                            <span style={{fontWeight: 'bold', color: 'var(--primary-neon)'}}>€{pack.price}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Resumen de Selección Paso 1 */}
+                <div className="step1-summary-card">
+                  <div className="summary-row">
+                    <span>Entradas ({ticketCount}x {selectedTicketType ? selectedTicketType.name : 'Entrada'}):</span>
+                    <span style={{fontWeight: '700', color: '#fff'}}>€{(ticketPriceEUR * ticketCount).toFixed(2)}</span>
+                  </div>
+                  {selectedDrinkPacks.length > 0 && (
+                    <div className="summary-row">
+                      <span>Combos ({selectedDrinkPacks.length}):</span>
+                      <span style={{fontWeight: '700', color: '#fff'}}>€{drinkPacksTotal.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="summary-divider" />
+                  <div className="summary-total-row">
+                    <div>
+                      <div className="total-label">TOTAL A PAGAR</div>
+                      <div className="total-bcv">Tasa BCV EUR: Bs. {currentRateEUR}</div>
+                    </div>
+                    <div className="total-values">
+                      <div className="total-eur">€{grandTotalEUR.toFixed(2)}</div>
+                      <div className="total-bs">Bs. {totalBs}</div>
+                    </div>
+                  </div>
                 </div>
+
+                <button 
+                  type="button" 
+                  className="btn-continue-step" 
+                  onClick={handleContinueToPayment}
+                  disabled={maxAvailableTickets <= 0 || ticketCount <= 0}
+                >
+                  {maxAvailableTickets <= 0 ? 'ENTRADAS AGOTADAS' : 'CONTINUAR AL PAGO →'}
+                </button>
               </div>
 
-              <div className="form-grid">
-                <div className="form-group">
-                  <label htmlFor="bank">Método / Banco Emisor</label>
-                  <select id="bank" name="bank" required>
-                    <option value="">Selecciona una opción</option>
-                    <option value="Zelle">Zelle</option>
-                    <option value="Binance">Binance</option>
-                    <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
-                    <option value="Bancamiga">Bancamiga</option>
-                    <option value="Mercantil">Mercantil</option>
-                    <option value="Provincial">Provincial</option>
-                    <option value="Banesco">Banesco</option>
-                    <option value="Otro">Otro / Pago Móvil</option>
-                  </select>
+              {/* ================= PASO 2: VERIFICACIÓN DE PAGO Y DATOS ================= */}
+              <div style={{ display: currentStep === 2 ? 'block' : 'none' }}>
+                <div className="step-nav-header">
+                  <button 
+                    type="button" 
+                    className="btn-back-step" 
+                    onClick={handleBackToStep1}
+                  >
+                    ← Volver a cambiar selección
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label htmlFor="ref">Últimos 6 dígitos (Ref)</label>
-                  <input type="text" id="ref" name="ref" placeholder="Ej. 948210" maxLength="6" required />
+
+                <h2 className="modal-main-title">VERIFICACIÓN DE PAGO</h2>
+                <p className="modal-subtitle">Para asegurar tus entradas a <strong>{event.title}</strong>, realiza el pago vía Pago Móvil, Zelle o Binance y adjunta tu comprobante.</p>
+
+                {/* Resumen compacto del pedido */}
+                <div className="step2-order-badge">
+                  <div className="order-badge-info">
+                    <div className="order-badge-title">
+                      <span>TU SELECCIÓN</span>
+                      <button type="button" className="btn-edit-selection" onClick={handleBackToStep1}>
+                        (Modificar)
+                      </button>
+                    </div>
+                    <div className="order-badge-details">
+                      <strong>{ticketCount}x {selectedTicketType ? selectedTicketType.name : 'Entrada'}</strong>
+                      {selectedDrinkPacks.length > 0 && <span> + {selectedDrinkPacks.join(', ')}</span>}
+                    </div>
+                  </div>
+                  <div className="order-badge-price">
+                    <span className="badge-eur">€{grandTotalEUR.toFixed(2)}</span>
+                    <span className="badge-bs">Bs. {totalBs}</span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="form-group file-upload">
-                <label htmlFor="receipt">Captura del Comprobante</label>
-                <input type="file" id="receipt" name="receipt" accept="image/*" required />
-              </div>
+                <div className="payment-info">
+                  <div className="bank-col">
+                    <div className="bank-details">
+                      <h4>PAGO MÓVIL</h4>
+                      <p className="copyable" onClick={() => copyText('0172', 'banco')}>Banco: Bancamiga (0172) {copiedKey === 'banco' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>Cédula: 31253699 {copiedKey === 'cedula' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>Teléfono: 0424-7509224 {copiedKey === 'telefono' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p>Monto: <strong style={{color: 'white'}}>Bs. {totalBs}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span></p>
+                    </div>
+                    <div className="bank-details" style={{marginTop: '1.5rem'}}>
+                      <h4>BINANCE (USDT)</h4>
+                      <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>Correo (Binance Pay): zbcaj33@gmail.com {copiedKey === 'binance' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="bank-col">
+                    <div className="bank-details">
+                      <h4>ZELLE</h4>
+                      <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>Correo: contactofabianramirez@gmail.com {copiedKey === 'zcorreo' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>Titular: Fabian Ramirez {copiedKey === 'ztitular' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                    </div>
+                  </div>
+                </div>
 
-              <button 
-                type="submit" 
-                className="btn-primary full-width" 
-                style={{marginTop: '0.5rem'}} 
-                disabled={loading || maxAvailableTickets <= 0}
-              >
-                {loading ? 'ENVIANDO...' : (maxAvailableTickets <= 0 ? 'ENTRADAS AGOTADAS' : 'ENVIAR VERIFICACIÓN')}
-              </button>
+                <div className="form-group">
+                  <label htmlFor="name">Nombre y Apellido</label>
+                  <input type="text" id="name" name="name" placeholder="Ej. Carlos Pérez" required />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="email">Correo Electrónico (Para recibir las entradas)</label>
+                  <input type="email" id="email" name="email" placeholder="tu@correo.com" required />
+                </div>
+
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="cedula">Cédula de Identidad</label>
+                    <div style={{display: 'flex', gap: '0.5rem'}}>
+                      <select id="cedula-prefix" name="cedula-prefix" style={{width: '5rem', flexShrink: 0}}>
+                        <option value="V-">V</option>
+                        <option value="E-">E</option>
+                        <option value="J-">J</option>
+                        <option value="P-">P</option>
+                      </select>
+                      <input type="text" id="cedula" name="cedula" placeholder="12345678" style={{flexGrow: 1}} required pattern="[0-9]*" />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="phone">Teléfono de Contacto</label>
+                    <input type="tel" id="phone" name="phone" required placeholder="04141234567" pattern="[0-9]*" />
+                  </div>
+                </div>
+
+                <div className="form-grid">
+                  <div className="form-group">
+                    <label htmlFor="bank">Método / Banco Emisor</label>
+                    <select id="bank" name="bank" required>
+                      <option value="">Selecciona una opción</option>
+                      <option value="Zelle">Zelle</option>
+                      <option value="Binance">Binance</option>
+                      <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
+                      <option value="Bancamiga">Bancamiga</option>
+                      <option value="Mercantil">Mercantil</option>
+                      <option value="Provincial">Provincial</option>
+                      <option value="Banesco">Banesco</option>
+                      <option value="Otro">Otro / Pago Móvil</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="ref">Últimos 6 dígitos (Ref)</label>
+                    <input type="text" id="ref" name="ref" placeholder="Ej. 948210" maxLength="6" required />
+                  </div>
+                </div>
+
+                <div className="form-group file-upload">
+                  <label htmlFor="receipt">Captura del Comprobante</label>
+                  <input type="file" id="receipt" name="receipt" accept="image/*" required />
+                </div>
+
+                <button 
+                  type="submit" 
+                  className="btn-primary full-width" 
+                  style={{marginTop: '0.5rem'}} 
+                  disabled={loading || maxAvailableTickets <= 0}
+                >
+                  {loading ? 'ENVIANDO...' : (maxAvailableTickets <= 0 ? 'ENTRADAS AGOTADAS' : 'ENVIAR VERIFICACIÓN')}
+                </button>
+              </div>
             </form>
           </>
         ) : (

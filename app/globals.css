@@ -945,6 +945,277 @@ h4 {
     box-shadow: none;
 }
 
+/* ================= Modal Checkout Stepper ================= */
+.checkout-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    margin-bottom: 2rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    user-select: none;
+}
+
+.stepper-step {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #666666;
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    background: transparent;
+    border: none;
+    padding: 0;
+    font-family: inherit;
+}
+
+.stepper-step.active {
+    color: #ffffff;
+    font-weight: 700;
+}
+
+.stepper-step.active .step-number {
+    color: var(--primary-neon);
+}
+
+.stepper-step.completed {
+    color: #a0a0a0;
+    cursor: pointer;
+}
+
+.stepper-step.completed:hover {
+    color: #ffffff;
+}
+
+.stepper-step.completed .step-number {
+    color: var(--primary-neon);
+}
+
+.step-number {
+    font-family: var(--font-heading, sans-serif);
+    font-weight: 800;
+}
+
+.stepper-divider {
+    flex: 1;
+    height: 1px;
+    background: #2a2a2a;
+    margin: 0 1.2rem;
+    position: relative;
+    transition: background 0.3s ease;
+}
+
+.stepper-divider.completed {
+    background: linear-gradient(90deg, var(--primary-neon), #333);
+}
+
+.step-short {
+    display: none;
+}
+
+@media (max-width: 520px) {
+    .step-full {
+        display: none;
+    }
+    .step-short {
+        display: inline;
+    }
+    .stepper-divider {
+        margin: 0 0.6rem;
+    }
+    .stepper-step {
+        font-size: 0.82rem;
+    }
+}
+
+/* ================= Step 1 Summary Card ================= */
+.step1-summary-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.8rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #a0a0a0;
+}
+
+.summary-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 0.2rem 0;
+}
+
+.summary-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.total-label {
+    font-family: var(--font-heading, sans-serif);
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.total-bcv {
+    font-size: 0.75rem;
+    color: #777;
+    margin-top: 0.2rem;
+}
+
+.total-values {
+    text-align: right;
+}
+
+.total-eur {
+    font-family: var(--font-heading, sans-serif);
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--primary-neon);
+    line-height: 1.1;
+}
+
+.total-bs {
+    font-size: 0.85rem;
+    color: #ffffff;
+    font-weight: 600;
+    margin-top: 0.15rem;
+}
+
+/* ================= Step 2 Navigation & Order Badge ================= */
+.step-nav-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.btn-back-step {
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.btn-back-step:hover {
+    color: var(--primary-neon);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.step2-order-badge {
+    background: rgba(224, 255, 0, 0.04);
+    border: 1px solid rgba(224, 255, 0, 0.2);
+    border-radius: 8px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.8rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.order-badge-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--primary-neon);
+    margin-bottom: 0.3rem;
+}
+
+.btn-edit-selection {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: underline;
+    padding: 0;
+    font-family: inherit;
+}
+
+.btn-edit-selection:hover {
+    color: #ffffff;
+}
+
+.order-badge-details {
+    font-size: 0.9rem;
+    color: #ffffff;
+}
+
+.order-badge-price {
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.badge-eur {
+    font-family: var(--font-heading, sans-serif);
+    font-size: 1.25rem;
+    font-weight: 900;
+    color: var(--primary-neon);
+    line-height: 1.1;
+}
+
+.badge-bs {
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+.btn-continue-step {
+    background: #FFFFFF;
+    color: #000000;
+    border: none;
+    padding: 1.1rem;
+    font-size: 0.95rem;
+    font-weight: 900;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    letter-spacing: 0.5px;
+    width: 100%;
+}
+
+.btn-continue-step:hover:not(:disabled) {
+    background: #EAEAEA;
+    transform: translateY(-1px);
+}
+
+.btn-continue-step:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ================= Success Message Animation ================= */
 .success-message {
     animation: fadeIn 0.5s ease-out;

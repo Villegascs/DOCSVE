@@ -1,18 +1,20 @@
-import Countdown from './Countdown';
+import Link from 'next/link';
 import { db } from '@/lib/firebase-admin';
 
 export default async function Hero() {
-  let nextEventDate = new Date();
-  nextEventDate.setDate(nextEventDate.getDate() + 15);
-  let eventTitle = 'Pronto';
+  let dateDisplay = '03 DE OCTUBRE';
 
   try {
     const snapshot = await db.collection('events').where('isMainEvent', '==', true).limit(1).get();
     if (!snapshot.empty) {
       const mainEvent = snapshot.docs[0].data();
       if (mainEvent.date) {
-        nextEventDate = new Date(mainEvent.date);
-        eventTitle = mainEvent.title || 'Próximo Evento';
+        const nextEventDate = new Date(mainEvent.date);
+        const monthNames = [
+          'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
+          'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
+        ];
+        dateDisplay = `${nextEventDate.getDate().toString().padStart(2, '0')} DE ${monthNames[nextEventDate.getMonth()]}`;
       }
     }
   } catch (error) {
@@ -21,6 +23,7 @@ export default async function Hero() {
 
   return (
     <header id="inicio" className="hero">
+      {/* VIDEO DE FONDO CON EL WILD BLOOM ANIMADO */}
       <video
         autoPlay
         loop
@@ -31,10 +34,31 @@ export default async function Hero() {
         <source src="/Multimedia/video-fondo-wildbloom.mp4" type="video/mp4" />
         <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4" type="video/mp4" />
       </video>
-      <div className="hero-overlay"></div>
-      <div className="hero-content">
-        <Countdown targetDate={nextEventDate.toISOString()} />
+
+      {/* LOGO FLOWERS X DOCS ARRIBA DE WILD BLOOM */}
+      <div className="hero-top-logo">
+        <img 
+          src="/Logos/flower-x-docs.png" 
+          alt="FLOWERS x DOCS" 
+          className="hero-logo-flowers-docs"
+        />
       </div>
+
+      {/* FECHA DEL EVENTO ABAJO DE WILD BLOOM */}
+      <div className="hero-bottom-date">
+        <span>{dateDisplay}</span>
+      </div>
+
+      {/* TEXTO DE RESPONSABILIDAD AL FONDO CENTRADO */}
+      <div className="hero-disclaimer">
+        <span className="disclaimer-badge">🔞</span>
+        <span>CELEBRA LA VIDA CON RESPONSABILIDAD, SI CONSUMES LICOR NO CONDUZCAS.</span>
+      </div>
+
+      {/* BOTÓN GET TICKETS ABAJO A LA DERECHA */}
+      <Link href="#eventos" className="hero-btn-tickets">
+        GET TICKETS
+      </Link>
     </header>
   );
 }

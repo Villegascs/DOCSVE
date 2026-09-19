@@ -43,12 +43,10 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     }
 
     syncStock();
-    const interval = setInterval(syncStock, 3500);
     return () => {
       isMounted = false;
-      clearInterval(interval);
     };
-  }, [initialEvent.id]);
+  }, [initialEvent?.id]);
 
   // Helper to calculate available tickets for a ticket type and event
   const calculateAvailableForType = (type) => {

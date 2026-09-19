@@ -10,11 +10,34 @@ function getEmbedUrl(url) {
   return match ? `https://www.youtube-nocookie.com/embed/${match[1]}?rel=0&modestbranding=1` : url;
 }
 
+const DEFAULT_MAIN_EVENT = {
+  id: 'flowers-docs-main',
+  title: 'DOCS x FLOWERS',
+  date: '03 DE OCTUBRE',
+  location: 'CARACAS',
+  lineup: "TONY FLORES\nSALOMON CORREA\nFOFY\nNOCTO(VE)",
+  description: 'Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.',
+  image_url: '/Multimedia/IMG_0724.PNG',
+  status: 'active',
+  isMainEvent: true,
+  ticketLimit: 0,
+  soldTickets: 0,
+  isSoldOut: false,
+  ticketTypes: [
+    { name: 'General', priceEur: 12, priceBs: 11693.04 }
+  ],
+  drinkPacks: [
+    { name: '10 Cervezas', priceEur: 15, priceBs: 14616.30 },
+    { name: 'Botella de Ron + Servicios', priceEur: 45, priceBs: 43848.90 },
+    { name: 'Botella de Whisky + Servicios', priceEur: 65, priceBs: 63337.30 }
+  ]
+};
+
 export default function EventsGrid() {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState(DEFAULT_MAIN_EVENT);
+  const [events, setEvents] = useState([DEFAULT_MAIN_EVENT]);
+  const [loading, setLoading] = useState(false);
 
   // Video Section Info
   const [videoData, setVideoData] = useState({
@@ -28,11 +51,11 @@ export default function EventsGrid() {
     try {
       const res = await fetch('/api/admin/events');
       const data = await res.json();
-      if (data.success) {
+      if (data.success && Array.isArray(data.events) && data.events.length > 0) {
         setEvents(data.events);
       }
     } catch (error) {
-      console.error('Error fetching events:', error);
+      console.warn('Error fetching events, keeping current state:', error);
     } finally {
       setLoading(false);
     }
@@ -55,19 +78,14 @@ export default function EventsGrid() {
   useEffect(() => {
     fetchEvents();
     fetchVideoData();
-    const interval = setInterval(fetchEvents, 8000);
-    return () => clearInterval(interval);
   }, []);
 
   // Función para abrir directamente el evento asignado a GET TICKETS
   const handleOpenGetTickets = () => {
-    if (events.length === 0) return;
-    // 1. Prioriza el evento marcado como GET TICKETS (isMainEvent === true) y activo
-    let target = events.find(e => e.isMainEvent && e.status === 'active');
-    // 2. Si no, cualquier evento con isMainEvent
-    if (!target) target = events.find(e => e.isMainEvent);
-    // 3. Fallback a cualquier evento activo
-    if (!target) target = events.find(e => e.status === 'active') || events[0];
+    const list = events && events.length > 0 ? events : [DEFAULT_MAIN_EVENT];
+    let target = list.find(e => e.isMainEvent && e.status === 'active');
+    if (!target) target = list.find(e => e.isMainEvent);
+    if (!target) target = list.find(e => e.status === 'active') || list[0] || DEFAULT_MAIN_EVENT;
 
     if (target) {
       setSelectedEvent(target);

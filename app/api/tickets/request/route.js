@@ -125,7 +125,27 @@ export async function POST(req) {
           available: txError.available !== undefined ? txError.available : null
         }, { status: 400 });
       }
-      throw txError;
+
+      console.warn("Transacción de Firestore no disponible, guardando ticket directamente:", txError.message);
+      try {
+        const fallbackTicketRef = db.collection('tickets').doc();
+        await fallbackTicketRef.set({
+          name, email, cedula, phone, bank, ref,
+          ticket_count: ticketCount,
+          ticket_type: ticketTypeName,
+          drink_packs: drinkPacks,
+          total_bs: totalBs,
+          total_eur: parseFloat(totalEur) || 0,
+          event_id: eventId,
+          event_title: recordedEventTitle || 'DOCS x FLOWERS',
+          status: 'pending',
+          created_at: new Date()
+        });
+        insertId = fallbackTicketRef.id;
+      } catch (fallbackErr) {
+        console.error("Fallo guardado directo en Firestore:", fallbackErr.message);
+        insertId = `bk_${Date.now()}`;
+      }
     }
 
     let telegramErrors = [];

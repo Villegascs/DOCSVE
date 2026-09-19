@@ -361,12 +361,8 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                               style={{accentColor: 'var(--primary-neon)', width: '1.2rem', height: '1.2rem', cursor: isSoldOut ? 'not-allowed' : 'pointer'}}
                             />
                             <span style={{fontWeight: selectedTicketType?.name === type.name ? 'bold' : 'normal', color: selectedTicketType?.name === type.name ? 'white' : '#ccc'}}>
-                              {type.name} {isSoldOut ? (
+                              {type.name} {isSoldOut && (
                                 <span style={{color: '#ff4444', fontSize: '0.8rem', marginLeft: '0.5rem'}}>(Agotado)</span>
-                              ) : (type.limit > 0 || event.ticketLimit > 0) && (
-                                <span style={{color: '#888', fontSize: '0.8rem', marginLeft: '0.5rem'}}>
-                                  ({availableForThisType} {availableForThisType === 1 ? 'disponible' : 'disponibles'})
-                                </span>
                               )}
                             </span>
                           </div>
@@ -380,11 +376,6 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                 <div className="form-group" style={{marginBottom: '1.8rem'}}>
                   <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem'}}>
                     <label htmlFor="ticketCount" style={{margin: 0}}>Número de Entradas</label>
-                    {maxAvailableTickets > 0 && (
-                      <span style={{fontSize: '0.85rem', color: 'var(--primary-neon)', fontWeight: '600'}}>
-                        {maxAvailableTickets} {maxAvailableTickets === 1 ? 'disponible' : 'disponibles'}
-                      </span>
-                    )}
                   </div>
 
                   <div className="quantity-stepper">

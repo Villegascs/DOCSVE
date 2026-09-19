@@ -1,5 +1,4 @@
 import Countdown from './Countdown';
-import Link from 'next/link';
 import { db } from '@/lib/firebase-admin';
 
 export default async function Hero() {
@@ -22,20 +21,20 @@ export default async function Hero() {
 
   return (
     <header id="inicio" className="hero">
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="hero-video"
+      >
+        <source src="/Multimedia/video-fondo-wildbloom.mp4" type="video/mp4" />
+        <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4" type="video/mp4" />
+      </video>
       <div className="hero-overlay"></div>
       <div className="hero-content">
-        <div className="hero-badge">{eventTitle}</div>
-        <h1 className="hero-title">
-          <span>WITHOUT MUSIC,</span>
-          <span className="highlight">LIFE WOULD BE A MISTAKE.</span>
-        </h1>
-        
+        <div className="hero-badge" style={{ marginBottom: '2.5rem' }}>{eventTitle}</div>
         <Countdown targetDate={nextEventDate.toISOString()} />
-
-        <div className="hero-actions" style={{ marginTop: '2rem' }}>
-          <Link href="#eventos" className="btn-primary">COMPRAR ENTRADAS</Link>
-          <Link href="#musica" className="btn-secondary">ESCUCHAR SETS</Link>
-        </div>
       </div>
     </header>
   );

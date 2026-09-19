@@ -510,7 +510,19 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                         LINEUP / ARTISTAS
                       </div>
                       <div className="event-lineup-content">
-                        {event.lineup}
+                        {(event.lineup.includes('\n') 
+                          ? event.lineup.split('\n') 
+                          : event.lineup.split(',')
+                        ).map((artist, idx) => {
+                          const trimmed = artist.trim();
+                          if (!trimmed) return null;
+                          return (
+                            <div key={idx} className="event-lineup-artist">
+                              <span className="artist-bullet">•</span>
+                              <span className="artist-name">{trimmed}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

@@ -323,13 +323,14 @@ export default function AdminEvents() {
               </div>
 
               <div className="form-group">
-                <label>Lineup / Artistas</label>
-                <input 
-                  type="text" 
+                <label>Lineup / Artistas (Escribe un artista por línea o separados por coma)</label>
+                <textarea 
+                  rows="4" 
                   value={formData.lineup} 
                   onChange={e => setFormData({...formData, lineup: e.target.value})} 
-                  placeholder="Ej: DJ Name 1, DJ Name 2, Special Guest (separados por coma o texto)" 
-                />
+                  placeholder={"TONY FLORES\nSALOMON CORREA\nFOFY\nNOCTO(VE)"}
+                  style={{width: '100%', background: '#181818', border: '1px solid #2A2A2A', color: 'white', padding: '1rem', borderRadius: '4px', fontFamily: 'inherit', lineHeight: '1.5'}}
+                ></textarea>
               </div>
 
               <div className="form-group">

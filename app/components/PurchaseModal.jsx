@@ -346,9 +346,9 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   </button>
                   <div className="stepper-value">
                     <span className="stepper-number">{maxAvailableTickets <= 0 ? 0 : ticketCount}</span>
-                    <span className="stepper-unit">
-                      {maxAvailableTickets <= 0 ? 'Agotado' : (ticketCount === 1 ? 'entrada' : 'entradas')}
-                    </span>
+                    {maxAvailableTickets <= 0 && (
+                      <span className="stepper-unit" style={{color: '#ff4444'}}>Agotado</span>
+                    )}
                   </div>
                   <button 
                     type="button" 

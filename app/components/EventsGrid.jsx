@@ -18,10 +18,10 @@ export default function EventsGrid() {
 
   // Video Section Info
   const [videoData, setVideoData] = useState({
-    title: "DÖCS | GALLERY SESSION",
-    subtitle: "DÖCS SESSIONS",
+    title: "AFTER MOVIE DOCS REDROOM",
+    subtitle: "",
     description: "Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.",
-    youtubeUrl: "https://www.youtube.com/watch?v=5qap5aO4i9A"
+    youtubeUrl: "https://www.youtube.com/watch?v=hW7KevXA7w4"
   });
 
   const fetchEvents = async () => {
@@ -126,13 +126,6 @@ export default function EventsGrid() {
           <div className="video-session-grid">
             {/* COLUMNA IZQUIERDA: INFORMACIÓN Y DESCRIPCIÓN DEL VIDEO */}
             <div className="video-session-info">
-              {videoData.subtitle && (
-                <div className="session-badge">
-                  <span className="session-badge-dot"></span>
-                  <span>{videoData.subtitle}</span>
-                </div>
-              )}
-              
               <h2 className="session-title">{videoData.title}</h2>
               
               <p className="session-description">

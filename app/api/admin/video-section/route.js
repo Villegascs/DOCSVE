@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
 const DEFAULT_VIDEO_DATA = {
-  title: "DÖCS | GALLERY SESSION",
-  subtitle: "DÖCS SESSIONS",
+  title: "AFTER MOVIE DOCS REDROOM",
+  subtitle: "",
   description: "Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.",
-  youtubeUrl: "https://www.youtube.com/watch?v=5qap5aO4i9A"
+  youtubeUrl: "https://www.youtube.com/watch?v=hW7KevXA7w4"
 };
 
 export async function GET() {

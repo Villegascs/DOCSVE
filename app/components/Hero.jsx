@@ -33,7 +33,6 @@ export default async function Hero() {
       </video>
       <div className="hero-overlay"></div>
       <div className="hero-content">
-        <div className="hero-badge" style={{ marginBottom: '2.5rem' }}>{eventTitle}</div>
         <Countdown targetDate={nextEventDate.toISOString()} />
       </div>
     </header>

@@ -51,7 +51,6 @@ export default async function Hero() {
 
       {/* TEXTO DE RESPONSABILIDAD AL FONDO CENTRADO */}
       <div className="hero-disclaimer">
-        <span className="disclaimer-badge">🔞</span>
         <span>CELEBRA LA VIDA CON RESPONSABILIDAD, SI CONSUMES LICOR NO CONDUZCAS.</span>
       </div>
 

@@ -157,7 +157,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
       setSelectedBank('Binance');
     } else if (method === 'pagomovil') {
       if (selectedBank === 'Zelle' || selectedBank === 'Binance') {
-        setSelectedBank('Bancamiga');
+        setSelectedBank('Provincial');
       }
     }
   };
@@ -534,7 +534,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                       value={paymentMethod}
                       onChange={(e) => handlePaymentMethodChange(e.target.value)}
                     >
-                      <option value="pagomovil">📱 Pago Móvil (Bancamiga / Bolívares)</option>
+                      <option value="pagomovil">📱 Pago Móvil (Provincial / Bolívares)</option>
                       <option value="zelle">💵 Zelle (Dólares / USD)</option>
                       <option value="binance">🪙 Binance Pay (USDT)</option>
                     </select>
@@ -548,24 +548,24 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                         <span className="method-rate-tag">Tasa BCV EUR: Bs. {currentRateEUR}</span>
                       </div>
                       <div className="payment-items-list">
-                        <div className="payment-item-row" onClick={() => copyText('0172', 'banco')}>
+                        <div className="payment-item-row" onClick={() => copyText('0108', 'banco')}>
                           <div className="item-row-left">
                             <span className="item-row-label">Banco Destino</span>
-                            <span className="item-row-value">Bancamiga (0172)</span>
+                            <span className="item-row-value">Provincial (0108)</span>
                           </div>
                           <span className="item-copy-badge">{copiedKey === 'banco' ? '✓ Copiado' : 'Copiar'}</span>
                         </div>
-                        <div className="payment-item-row" onClick={() => copyText('31253699', 'cedula')}>
+                        <div className="payment-item-row" onClick={() => copyText('10903146', 'cedula')}>
                           <div className="item-row-left">
                             <span className="item-row-label">Cédula de Identidad</span>
-                            <span className="item-row-value">31253699</span>
+                            <span className="item-row-value">10903146</span>
                           </div>
                           <span className="item-copy-badge">{copiedKey === 'cedula' ? '✓ Copiado' : 'Copiar'}</span>
                         </div>
-                        <div className="payment-item-row" onClick={() => copyText('04247509224', 'telefono')}>
+                        <div className="payment-item-row" onClick={() => copyText('04126711208', 'telefono')}>
                           <div className="item-row-left">
                             <span className="item-row-label">Teléfono</span>
-                            <span className="item-row-value">0424-7509224</span>
+                            <span className="item-row-value">0412-6711208</span>
                           </div>
                           <span className="item-copy-badge">{copiedKey === 'telefono' ? '✓ Copiado' : 'Copiar'}</span>
                         </div>
@@ -612,10 +612,10 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                         <span className="method-rate-tag">Total a pagar: {grandTotalEUR.toFixed(2)} USDT</span>
                       </div>
                       <div className="payment-items-list">
-                        <div className="payment-item-row" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>
+                        <div className="payment-item-row" onClick={() => copyText('201174382', 'binance')}>
                           <div className="item-row-left">
-                            <span className="item-row-label">Correo Binance Pay</span>
-                            <span className="item-row-value" style={{ wordBreak: 'break-all' }}>zbcaj33@gmail.com</span>
+                            <span className="item-row-label">Binance ID</span>
+                            <span className="item-row-value">201174382</span>
                           </div>
                           <span className="item-copy-badge">{copiedKey === 'binance' ? '✓ Copiado' : 'Copiar'}</span>
                         </div>
@@ -670,11 +670,11 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                       required
                     >
                       <option value="">Selecciona una opción</option>
-                      <option value="Bancamiga">Bancamiga (Pago Móvil)</option>
+                      <option value="Provincial">Provincial (Pago Móvil)</option>
                       <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
                       <option value="Banesco">Banesco</option>
                       <option value="Mercantil">Mercantil</option>
-                      <option value="Provincial">Provincial</option>
+                      <option value="Bancamiga">Bancamiga</option>
                       <option value="Otro">Otro / Pago Móvil</option>
                       <option value="Zelle">Zelle</option>
                       <option value="Binance">Binance</option>

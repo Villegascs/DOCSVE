@@ -12,10 +12,11 @@ export default async function Hero() {
         loop
         muted
         playsInline
+        preload="auto"
         className="hero-video"
       >
-        <source src="/Multimedia/video-fondo-wildbloom.mp4" type="video/mp4" />
-        <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4" type="video/mp4" />
+        <source src="/Multimedia/video-fondo-wildbloom.mp4?v=2" type="video/mp4" />
+        <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4?v=2" type="video/mp4" />
       </video>
 
       {/* LOGOS INTERACTIVOS FLOWERS X DOCS */}

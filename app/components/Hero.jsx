@@ -1,25 +1,8 @@
 import GetTicketsButton from './GetTicketsButton';
-import { db } from '@/lib/firebase-admin';
 
 export default async function Hero() {
-  let dateDisplay = '03 DE OCTUBRE';
-
-  try {
-    const snapshot = await db.collection('events').where('isMainEvent', '==', true).limit(1).get();
-    if (!snapshot.empty) {
-      const mainEvent = snapshot.docs[0].data();
-      if (mainEvent.date) {
-        const nextEventDate = new Date(mainEvent.date);
-        const monthNames = [
-          'ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO',
-          'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'
-        ];
-        dateDisplay = `${nextEventDate.getDate().toString().padStart(2, '0')} DE ${monthNames[nextEventDate.getMonth()]}`;
-      }
-    }
-  } catch (error) {
-    console.error('Error fetching main event:', error);
-  }
+  // Fecha oficial del evento para la portada: 03 DE OCTUBRE
+  const dateDisplay = '03 DE OCTUBRE';
 
   return (
     <header id="inicio" className="hero">

@@ -31,7 +31,18 @@ export default function Navbar() {
           <Link href="#musica" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>
           <Link href="#musica" className="nav-link" onClick={() => setMenuOpen(false)}>PLAYLIST</Link>
           <Link href="#inicio" className="nav-link" onClick={() => setMenuOpen(false)}>NOSOTROS</Link>
-          <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>TICKETS</Link>
+          <button 
+            type="button"
+            className="nav-link nav-link-btn" 
+            onClick={() => {
+              setMenuOpen(false);
+              if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('open-get-tickets'));
+              }
+            }}
+          >
+            TICKETS
+          </button>
         </div>
         
         {/* LADO DERECHO: LOGO CC (Redirige a Instagram) + MENÚ MÓVIL */}

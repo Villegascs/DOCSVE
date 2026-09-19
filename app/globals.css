@@ -243,6 +243,14 @@ h4 {
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
 }
 
+.nav-link-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    line-height: inherit;
+}
+
 .nav-right-wrapper {
     display: flex;
     align-items: center;
@@ -584,6 +592,167 @@ h4 {
 }
 
 
+
+/* ================= Video Session Section ================= */
+.video-session-section {
+    padding: 7rem 0 8rem;
+    background-color: #000000;
+    position: relative;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.video-session-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.3fr;
+    gap: 4.5rem;
+    align-items: center;
+}
+
+.video-session-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.session-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    width: fit-content;
+}
+
+.session-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ff2e2e;
+    box-shadow: 0 0 10px #ff2e2e;
+}
+
+.session-title {
+    font-family: var(--font-heading);
+    font-size: clamp(2.2rem, 3.8vw, 3.6rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    line-height: 1.15;
+    color: #ffffff;
+    margin: 0;
+}
+
+.session-description {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 300;
+    margin: 0;
+}
+
+.session-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem;
+    margin-top: 0.75rem;
+}
+
+.session-btn-tickets {
+    padding: 0.85rem 2rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.15);
+    cursor: pointer;
+}
+
+.session-btn-youtube {
+    padding: 0.85rem 1.8rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    border-radius: 9999px;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.session-btn-youtube:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: #ffffff;
+    color: #ffffff;
+    transform: translateY(-2px);
+}
+
+.video-session-frame-wrapper {
+    position: relative;
+    width: 100%;
+    border-radius: 20px;
+    padding: 3px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.04) 100%);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 123, 235, 0.12);
+}
+
+.video-session-frame {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 17px;
+    overflow: hidden;
+    background: #050505;
+}
+
+.video-session-frame iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+@media (max-width: 960px) {
+    .video-session-section {
+        padding: 5rem 0 6rem;
+    }
+
+    .video-session-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+    }
+
+    .session-title {
+        font-size: 2.2rem;
+    }
+
+    .session-description {
+        font-size: 0.95rem;
+    }
+
+    .session-actions {
+        width: 100%;
+    }
+
+    .session-btn-tickets,
+    .session-btn-youtube {
+        width: 100%;
+        justify-content: center;
+    }
+}
 
 /* ================= Events Grid ================= */
 .events-grid {

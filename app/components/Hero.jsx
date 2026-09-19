@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import GetTicketsButton from './GetTicketsButton';
 import { db } from '@/lib/firebase-admin';
 
 export default async function Hero() {
@@ -83,9 +83,9 @@ export default async function Hero() {
       </div>
 
       {/* BOTÓN GET TICKETS ABAJO A LA DERECHA */}
-      <Link href="#eventos" className="hero-btn-tickets">
+      <GetTicketsButton className="hero-btn-tickets">
         GET TICKETS
-      </Link>
+      </GetTicketsButton>
     </header>
   );
 }

@@ -97,6 +97,24 @@ export default function AdminEvents() {
     setEventToDelete(id);
   };
 
+  const handleSetGetTickets = async (event) => {
+    try {
+      const res = await fetch('/api/admin/events', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...event, isMainEvent: true })
+      });
+      const data = await res.json();
+      if (data.success) {
+        fetchEvents();
+        setToastMessage(`✓ "${event.title}" asignado a GET TICKETS`);
+        setTimeout(() => setToastMessage(null), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const confirmDelete = async () => {
     if (eventToDelete) {
       await fetch(`/api/admin/events?id=${eventToDelete}`, { method: 'DELETE' });
@@ -191,14 +209,14 @@ export default function AdminEvents() {
                 <th>Fecha</th>
                 <th>Locación</th>
                 <th>Estado</th>
-                <th>Principal</th>
+                <th>Opción GET TICKETS</th>
                 <th>Entradas</th>
                 <th>Acciones</th>
               </tr>
             </thead>
             <tbody>
               {events.length === 0 ? (
-                <tr><td colSpan="7" style={{textAlign: 'center', padding: '2rem'}}>No hay eventos creados.</td></tr>
+                <tr><td colSpan="8" style={{textAlign: 'center', padding: '2rem'}}>No hay eventos creados.</td></tr>
               ) : events.map(event => (
                 <tr key={event.id}>
                   <td>
@@ -213,7 +231,32 @@ export default function AdminEvents() {
                     </span>
                   </td>
                   <td>
-                    {event.isMainEvent ? <strong style={{color: 'var(--primary-neon)'}}>★ Sí</strong> : <span style={{color: '#555'}}>No</span>}
+                    {event.isMainEvent ? (
+                      <span style={{
+                        background: 'rgba(255, 255, 255, 0.15)', 
+                        color: '#ffffff', 
+                        border: '1px solid #ffffff', 
+                        padding: '0.3rem 0.65rem', 
+                        borderRadius: '4px', 
+                        fontWeight: 800, 
+                        fontSize: '0.78rem', 
+                        display: 'inline-flex', 
+                        alignItems: 'center', 
+                        gap: '0.35rem'
+                      }}>
+                        ★ GET TICKETS
+                      </span>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={() => handleSetGetTickets(event)} 
+                        className="btn-secondary"
+                        style={{padding: '0.25rem 0.6rem', fontSize: '0.75rem', borderColor: '#444', color: '#bbb'}}
+                        title="Asignar este evento al botón GET TICKETS"
+                      >
+                        Asignar
+                      </button>
+                    )}
                   </td>
                   <td>
                     {event.soldTickets || 0} / {event.ticketLimit || '∞'}
@@ -290,9 +333,29 @@ export default function AdminEvents() {
                 </select>
               </div>
 
-              <div className="form-group" style={{flexDirection: 'row', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', marginBottom: '1rem'}}>
-                <input type="checkbox" id="isMain" checked={formData.isMainEvent} onChange={e => setFormData({...formData, isMainEvent: e.target.checked})} style={{width: 'auto'}} />
-                <label htmlFor="isMain" style={{marginBottom: 0, cursor: 'pointer', color: 'white'}}>Establecer como Evento Principal (Para la cuenta regresiva)</label>
+              <div className="form-group" style={{
+                background: 'rgba(255, 255, 255, 0.04)', 
+                padding: '1.1rem', 
+                borderRadius: '8px', 
+                border: '1px solid rgba(255, 255, 255, 0.15)', 
+                marginTop: '1.2rem', 
+                marginBottom: '1.2rem'
+              }}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                  <input 
+                    type="checkbox" 
+                    id="isMain" 
+                    checked={formData.isMainEvent} 
+                    onChange={e => setFormData({...formData, isMainEvent: e.target.checked})} 
+                    style={{width: '20px', height: '20px', accentColor: '#ffffff', cursor: 'pointer'}} 
+                  />
+                  <label htmlFor="isMain" style={{marginBottom: 0, cursor: 'pointer', color: 'white', fontWeight: 800, fontSize: '0.95rem'}}>
+                    ★ Activar opción GET TICKETS (Válido solo para 1 evento a la vez)
+                  </label>
+                </div>
+                <p style={{fontSize: '0.82rem', color: '#aaa', margin: '0.5rem 0 0 2rem', lineHeight: 1.4}}>
+                  Al marcar este evento, cuando un visitante presione el botón <strong>GET TICKETS</strong> en la web, se abrirá automáticamente el panel de compra directa para este evento.
+                </p>
               </div>
 
               {/* Dynamic Ticket Types Section */}

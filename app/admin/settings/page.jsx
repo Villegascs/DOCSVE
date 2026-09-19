@@ -7,9 +7,54 @@ export default function AdminSettings() {
   const [newKey, setNewKey] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Video Section Settings
+  const [videoSettings, setVideoSettings] = useState({
+    title: 'DÖCS | GALLERY SESSION',
+    subtitle: 'DÖCS SESSIONS',
+    description: 'Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.',
+    youtubeUrl: 'https://www.youtube.com/watch?v=5qap5aO4i9A'
+  });
+  const [savingVideo, setSavingVideo] = useState(false);
+  const [videoToast, setVideoToast] = useState(null);
+
   useEffect(() => {
     fetchKeys();
+    fetchVideoSettings();
   }, []);
+
+  const fetchVideoSettings = async () => {
+    try {
+      const res = await fetch('/api/admin/video-section');
+      const data = await res.json();
+      if (data.success && data.data) {
+        setVideoSettings(data.data);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSaveVideoSettings = async (e) => {
+    e.preventDefault();
+    setSavingVideo(true);
+    try {
+      const res = await fetch('/api/admin/video-section', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(videoSettings)
+      });
+      const data = await res.json();
+      if (data.success) {
+        setVideoToast('✓ Sección de Video de YouTube guardada');
+        setTimeout(() => setVideoToast(null), 3000);
+      }
+    } catch (e) {
+      console.error(e);
+      alert('Error guardando configuración del video');
+    } finally {
+      setSavingVideo(false);
+    }
+  };
 
   const fetchKeys = async () => {
     try {
@@ -61,7 +106,86 @@ export default function AdminSettings() {
         <h1 className="admin-title">Configuración</h1>
       </div>
 
-      <div className="admin-table-container" style={{padding: '2rem', maxWidth: '600px'}}>
+      {videoToast && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          background: 'var(--primary-neon)',
+          color: '#000',
+          padding: '1rem 1.5rem',
+          borderRadius: '8px',
+          fontWeight: 700,
+          zIndex: 9999,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+        }}>
+          {videoToast}
+        </div>
+      )}
+
+      {/* Tarjeta de Configuración de Video de YouTube y Sección */}
+      <div className="admin-table-container" style={{padding: '2rem', maxWidth: '750px', marginBottom: '2rem'}}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem'}}>
+          <h2 style={{margin: 0}}>Video de YouTube y Sección Principal</h2>
+          <span style={{fontSize: '0.8rem', background: '#ff0000', color: '#fff', padding: '0.2rem 0.6rem', borderRadius: '4px', fontWeight: 700}}>YOUTUBE</span>
+        </div>
+        <p style={{color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: '0.9rem', lineHeight: 1.5}}>
+          Personaliza el video de YouTube que se muestra a la derecha en la web y el párrafo con su información a la izquierda.
+        </p>
+
+        <form className="admin-form" onSubmit={handleSaveVideoSettings}>
+          <div className="form-group">
+            <label>Enlace del Video de YouTube (URL directa o compartir)</label>
+            <input 
+              type="text" 
+              placeholder="Ej: https://www.youtube.com/watch?v=5qap5aO4i9A" 
+              value={videoSettings.youtubeUrl} 
+              onChange={e => setVideoSettings({...videoSettings, youtubeUrl: e.target.value})} 
+              required
+            />
+          </div>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Etiqueta / Badge Superior</label>
+              <input 
+                type="text" 
+                placeholder="Ej: DÖCS SESSIONS" 
+                value={videoSettings.subtitle} 
+                onChange={e => setVideoSettings({...videoSettings, subtitle: e.target.value})} 
+              />
+            </div>
+            <div className="form-group">
+              <label>Título de la Sesión</label>
+              <input 
+                type="text" 
+                placeholder="Ej: DÖCS | GALLERY SESSION" 
+                value={videoSettings.title} 
+                onChange={e => setVideoSettings({...videoSettings, title: e.target.value})} 
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>Párrafo de Información / Descripción</label>
+            <textarea 
+              rows="4" 
+              placeholder="Información sobre el set, DJ, locación o vibra de la sesión..." 
+              value={videoSettings.description} 
+              onChange={e => setVideoSettings({...videoSettings, description: e.target.value})} 
+              required
+              style={{width: '100%', background: '#181818', border: '1px solid #2A2A2A', color: 'white', padding: '1rem', borderRadius: '4px'}}
+            />
+          </div>
+
+          <button type="submit" className="btn-primary" disabled={savingVideo}>
+            {savingVideo ? 'GUARDANDO...' : 'GUARDAR SECCIÓN DE VIDEO'}
+          </button>
+        </form>
+      </div>
+
+      <div className="admin-table-container" style={{padding: '2rem', maxWidth: '750px'}}>
         <h2>Plantilla de Entradas</h2>
         <p style={{color: 'var(--text-secondary)', marginBottom: '2rem'}}>
           Sube la imagen base que se usará para generar las entradas. El sistema superpondrá el código QR y el nombre del comprador automáticamente.

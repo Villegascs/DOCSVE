@@ -257,29 +257,29 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         answerTgCallbackQuery(callbackQueryId, { text: `ℹ️ Este pago ya está ${row.status.toUpperCase()}.` }).catch(() => {});
       }
       await editTgMessageReplyMarkup(chatId, messageId, {
-        inline_keyboard: [[{ text: `✓ Estado: ${row.status.toUpperCase()}`, callback_data: 'noop' }]]
+        inline_keyboard: []
       }).catch(() => {});
       return;
     }
 
-    // Cambiar inmediatamente los botones en Telegram para dar feedback instantáneo
+    // Remover botones inmediatamente de Telegram
     await editTgMessageReplyMarkup(chatId, messageId, {
-      inline_keyboard: [[{ text: '⏳ Aprobando y enviando entradas...', callback_data: 'noop' }]]
+      inline_keyboard: []
     }).catch(() => {});
 
     await ticketRef.update({ status: 'approved' });
 
-    // Actualizar caption en Telegram de forma segura
+    // Actualizar caption en Telegram con texto de APROBADO sin botones
     try {
       const cleanCap = (caption || 'NUEVO PAGO RECIBIDO') + '\n\n✅ <b>APROBADO</b>';
       const capRes = await editTgMessageCaption(chatId, messageId, cleanCap, {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '✅ Aprobado y Enviado', callback_data: 'noop' }]] }
+        reply_markup: { inline_keyboard: [] }
       });
       const capData = await capRes.json().catch(() => null);
       if (!capData?.ok) {
         await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO RECIBIDO'}\n\n✅ APROBADO`, {
-          reply_markup: { inline_keyboard: [[{ text: '✅ Aprobado y Enviado', callback_data: 'noop' }]] }
+          reply_markup: { inline_keyboard: [] }
         }).catch(console.error);
       }
     } catch (captionErr) {
@@ -544,13 +544,13 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
         answerTgCallbackQuery(callbackQueryId, { text: `ℹ️ Este pago ya está ${row.status.toUpperCase()}.` }).catch(() => {});
       }
       await editTgMessageReplyMarkup(chatId, messageId, {
-        inline_keyboard: [[{ text: `✓ Estado: ${row.status.toUpperCase()}`, callback_data: 'noop' }]]
+        inline_keyboard: []
       }).catch(() => {});
       return;
     }
 
     await editTgMessageReplyMarkup(chatId, messageId, {
-      inline_keyboard: [[{ text: '❌ Rechazado', callback_data: 'noop' }]]
+      inline_keyboard: []
     }).catch(() => {});
 
     await ticketRef.update({ status: 'rejected' });
@@ -559,12 +559,12 @@ async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
       const cleanCap = (caption || 'PAGO RECIBIDO') + '\n\n❌ <b>RECHAZADO</b>';
       const capRes = await editTgMessageCaption(chatId, messageId, cleanCap, {
         parse_mode: 'HTML',
-        reply_markup: { inline_keyboard: [[{ text: '❌ Pago Rechazado', callback_data: 'noop' }]] }
+        reply_markup: { inline_keyboard: [] }
       });
       const capData = await capRes.json().catch(() => null);
       if (!capData?.ok) {
         await editTgMessageCaption(chatId, messageId, `${caption || 'PAGO RECIBIDO'}\n\n❌ RECHAZADO`, {
-          reply_markup: { inline_keyboard: [[{ text: '❌ Pago Rechazado', callback_data: 'noop' }]] }
+          reply_markup: { inline_keyboard: [] }
         }).catch(console.error);
       }
     } catch (captionErr) {

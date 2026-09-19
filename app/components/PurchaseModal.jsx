@@ -687,6 +687,25 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
             <h3 style={{marginTop: '1.2rem', color: '#E0FF00', fontSize: '1.6rem'}}>¡Pago Enviado!</h3>
             <p style={{color: 'var(--text-secondary)', marginTop: '0.8rem', fontSize: '1rem'}}>Hemos recibido tu comprobante de pago.</p>
             <p style={{fontSize: '0.9rem', color: '#aaa', marginTop: '0.4rem'}}>Una vez verificado, te enviaremos tus entradas al correo.</p>
+
+            <div style={{
+              background: 'rgba(255, 255, 255, 0.04)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '8px',
+              padding: '1rem 1.2rem',
+              margin: '1.8rem auto 0 auto',
+              maxWidth: '460px',
+              textAlign: 'left'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-neon)', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '0.35rem' }}>
+                <span>📬</span>
+                <span>Al recibir tus entradas en el correo:</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.82rem', color: '#b8b8b8', lineHeight: '1.5' }}>
+                Si en unos minutos no ves el correo en tu <strong>Bandeja Principal</strong>, revisa tu carpeta de <strong>Spam o Promociones</strong> y márcalo como <em>"No es spam"</em> para asegurar que siempre te lleguen directo.
+              </p>
+            </div>
+
             <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem', minWidth: '160px'}}>Cerrar</button>
           </div>
         )}

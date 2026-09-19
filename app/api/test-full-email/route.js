@@ -53,14 +53,26 @@ export async function GET() {
 
     const mailOptions = {
       from: `"DOCS Underground" <${process.env.EMAIL_USER}>`,
+      replyTo: process.env.EMAIL_USER,
       to: row.email,
-      subject: `Tus Entradas para DOCS`,
-      html: `<div style="background:#050505;color:white;padding:40px;font-family:sans-serif;text-align:center;">
-          <h2>¡Pago Verificado!</h2>
-          <p>Hola ${row.name}, tu pago de Bs. ${row.total_bs} ha sido verificado con éxito.</p>
-          <p>Aquí tienes tus códigos QR. <strong>Cada entrada es válida para 1 persona.</strong></p>
-          ${qrHtml}
-      </div>`,
+      subject: `🎟️ Tus Entradas confirmadas para DOCS - ${row.name}`,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        'Importance': 'High'
+      },
+      text: `Hola ${row.name},\n\n¡Tu pago de Bs. ${row.total_bs} para DOCS ha sido verificado con éxito!\n\nTus códigos QR oficiales de acceso vienen adjuntos en este correo electrónico.\n\nDOCS Underground`,
+      html: `<!DOCTYPE html>
+<html lang="es">
+<head><meta charset="utf-8"><title>Tus Entradas</title></head>
+<body style="background:#0c0c0c;color:white;padding:30px;font-family:sans-serif;text-align:center;">
+  <h2>¡Pago Verificado!</h2>
+  <p>Hola ${row.name}, tu pago de Bs. ${row.total_bs} ha sido verificado con éxito.</p>
+  <p>Aquí tienes tus códigos QR de acceso:</p>
+  ${qrHtml}
+  <p style="color:#888;font-size:12px;margin-top:30px;">DOCS Underground - Todos los derechos reservados.</p>
+</body>
+</html>`,
       attachments
     };
 

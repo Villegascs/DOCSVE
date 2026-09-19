@@ -1,5 +1,6 @@
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import SponsorsTicker from './components/SponsorsTicker';
 import EventsGrid from './components/EventsGrid';
 import Footer from './components/Footer';
 
@@ -8,6 +9,7 @@ export default function Home() {
     <>
       <Navbar />
       <Hero />
+      <SponsorsTicker />
       <EventsGrid />
       
       <section id="tienda" style={{ padding: '8rem 2rem', textAlign: 'center', background: 'black', borderTop: '1px solid #1a1a1a' }}>

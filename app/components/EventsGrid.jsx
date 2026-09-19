@@ -33,6 +33,8 @@ export default function EventsGrid() {
     }
   };
 
+  const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
+
   useEffect(() => {
     fetchEvents();
     // Background polling every 8 seconds for live stock numbers across the website
@@ -40,9 +42,35 @@ export default function EventsGrid() {
     return () => clearInterval(interval);
   }, []);
 
+  // Restaurar automáticamente el modal si el cliente recargó por accidente
+  useEffect(() => {
+    if (hasRestoredDraft || events.length === 0 || modalOpen) return;
+    try {
+      const saved = localStorage.getItem('docs_purchase_draft');
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft && draft.eventId && (Date.now() - (draft.updatedAt || 0) < 24 * 60 * 60 * 1000)) {
+          const matchingEvent = events.find(e => e.id === draft.eventId);
+          if (matchingEvent && matchingEvent.status === 'active') {
+            setSelectedEvent(matchingEvent);
+            setModalOpen(true);
+            setHasRestoredDraft(true);
+          }
+        }
+      }
+    } catch (_) {}
+  }, [events, modalOpen, hasRestoredDraft]);
+
   const handleBuyClick = (evt) => {
     setSelectedEvent(evt);
     setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    try {
+      localStorage.removeItem('docs_purchase_draft');
+    } catch (_) {}
+    setModalOpen(false);
   };
 
   return (
@@ -93,7 +121,7 @@ export default function EventsGrid() {
       {modalOpen && (
         <PurchaseModal 
           event={selectedEvent} 
-          onClose={() => setModalOpen(false)} 
+          onClose={handleCloseModal} 
           onPurchaseSuccess={fetchEvents}
         />
       )}

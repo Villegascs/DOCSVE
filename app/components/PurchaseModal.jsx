@@ -49,9 +49,31 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     return max;
   };
 
+  // Helper para leer borrador en caso de recarga accidental
+  const getDraft = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const item = localStorage.getItem('docs_purchase_draft');
+      if (item) {
+        const parsed = JSON.parse(item);
+        if (parsed && parsed.eventId === initialEvent.id && (Date.now() - (parsed.updatedAt || 0) < 24 * 60 * 60 * 1000)) {
+          return parsed;
+        }
+      }
+    } catch (_) {}
+    return null;
+  };
+
+  const initialDraft = getDraft();
+
   const [selectedTicketType, setSelectedTicketType] = useState(() => {
+    if (initialDraft?.ticketTypeName && initialEvent.ticketTypes) {
+      const matched = initialEvent.ticketTypes.find(t => t.name === initialDraft.ticketTypeName);
+      if (matched && calculateAvailableForType(matched) > 0) {
+        return matched;
+      }
+    }
     if (initialEvent.ticketTypes && initialEvent.ticketTypes.length > 0) {
-      // Default to first available ticket type with stock
       const availableType = initialEvent.ticketTypes.find(t => calculateAvailableForType(t) > 0);
       return availableType || initialEvent.ticketTypes[0];
     }
@@ -61,6 +83,9 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   const maxAvailableTickets = calculateAvailableForType(selectedTicketType);
 
   const [ticketCount, setTicketCount] = useState(() => {
+    if (typeof initialDraft?.ticketCount === 'number' && initialDraft.ticketCount > 0) {
+      return initialDraft.ticketCount;
+    }
     const available = calculateAvailableForType(
       initialEvent.ticketTypes && initialEvent.ticketTypes.length > 0 
         ? (initialEvent.ticketTypes.find(t => calculateAvailableForType(t) > 0) || initialEvent.ticketTypes[0])
@@ -69,15 +94,64 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     return available > 0 ? 1 : 0;
   });
 
-  const [selectedDrinkPacks, setSelectedDrinkPacks] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [paymentMethod, setPaymentMethod] = useState('pagomovil');
-  const [selectedBank, setSelectedBank] = useState('');
+  const [selectedDrinkPacks, setSelectedDrinkPacks] = useState(() => {
+    return Array.isArray(initialDraft?.selectedDrinkPacks) ? initialDraft.selectedDrinkPacks : [];
+  });
+
+  const [currentStep, setCurrentStep] = useState(() => {
+    return initialDraft?.currentStep === 2 ? 2 : 1;
+  });
+
+  const [paymentMethod, setPaymentMethod] = useState(() => {
+    return initialDraft?.paymentMethod || 'pagomovil';
+  });
+
+  const [selectedBank, setSelectedBank] = useState(() => {
+    return initialDraft?.selectedBank || 'Provincial';
+  });
+
+  const [clientInfo, setClientInfo] = useState(() => {
+    return initialDraft?.clientInfo || {
+      name: '',
+      email: '',
+      cedulaPrefix: 'V-',
+      cedula: '',
+      phone: '',
+      ref: ''
+    };
+  });
+
   const [customAlert, setCustomAlert] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
   const [copiedKey, setCopiedKey] = useState(null);
+
+  // Guardar automáticamente el progreso en localStorage ante cualquier cambio
+  useEffect(() => {
+    if (success) return;
+    try {
+      localStorage.setItem('docs_purchase_draft', JSON.stringify({
+        eventId: event.id,
+        currentStep,
+        ticketTypeName: selectedTicketType?.name,
+        ticketCount,
+        selectedDrinkPacks,
+        paymentMethod,
+        selectedBank,
+        clientInfo,
+        updatedAt: Date.now()
+      }));
+    } catch (_) {}
+  }, [event.id, currentStep, selectedTicketType, ticketCount, selectedDrinkPacks, paymentMethod, selectedBank, clientInfo, success]);
+
+  // Cierre limpio del modal que elimina el borrador
+  const handleModalClose = () => {
+    try {
+      localStorage.removeItem('docs_purchase_draft');
+    } catch (_) {}
+    onClose();
+  };
 
   // Sync ticketCount when selected ticket type changes or if maxAvailableTickets changes
   useEffect(() => {
@@ -269,6 +343,9 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
       }
 
       setSuccess(true);
+      try {
+        localStorage.removeItem('docs_purchase_draft');
+      } catch (_) {}
       onPurchaseSuccess?.();
     } catch (error) {
       console.error(error);
@@ -284,7 +361,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   };
 
   return (
-    <div className="modal active" onClick={(e) => { if (e.target.className.includes('modal active')) onClose(); }}>
+    <div className="modal active" onClick={(e) => { if (e.target.className.includes('modal active')) handleModalClose(); }}>
       <div className="modal-content custom-modal">
         
         {!success ? (
@@ -323,7 +400,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
               <button 
                 type="button" 
                 className="modal-close-btn" 
-                onClick={onClose} 
+                onClick={handleModalClose} 
                 aria-label="Cerrar modal"
               >
                 &times;
@@ -617,30 +694,71 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
 
                 <div className="form-group">
                   <label htmlFor="name">Nombre y Apellido</label>
-                  <input type="text" id="name" name="name" placeholder="Ej. Carlos Pérez" required />
+                  <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    placeholder="Ej. Carlos Pérez" 
+                    value={clientInfo.name}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, name: e.target.value }))}
+                    required 
+                  />
                 </div>
 
                 <div className="form-group">
                   <label htmlFor="email">Correo Electrónico (Para recibir las entradas)</label>
-                  <input type="email" id="email" name="email" placeholder="tu@correo.com" required />
+                  <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="tu@correo.com" 
+                    value={clientInfo.email}
+                    onChange={(e) => setClientInfo(prev => ({ ...prev, email: e.target.value }))}
+                    required 
+                  />
                 </div>
 
                 <div className="form-grid">
                   <div className="form-group">
                     <label htmlFor="cedula">Cédula de Identidad</label>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
-                      <select id="cedula-prefix" name="cedula-prefix" style={{width: '5.2rem', flexShrink: 0}}>
+                      <select 
+                        id="cedula-prefix" 
+                        name="cedula-prefix" 
+                        value={clientInfo.cedulaPrefix}
+                        onChange={(e) => setClientInfo(prev => ({ ...prev, cedulaPrefix: e.target.value }))}
+                        style={{width: '5.2rem', flexShrink: 0}}
+                      >
                         <option value="V-">V</option>
                         <option value="E-">E</option>
                         <option value="J-">J</option>
                         <option value="P-">P</option>
                       </select>
-                      <input type="text" id="cedula" name="cedula" placeholder="12345678" style={{flexGrow: 1}} required pattern="[0-9]*" />
+                      <input 
+                        type="text" 
+                        id="cedula" 
+                        name="cedula" 
+                        placeholder="12345678" 
+                        value={clientInfo.cedula}
+                        onChange={(e) => setClientInfo(prev => ({ ...prev, cedula: e.target.value }))}
+                        style={{flexGrow: 1}} 
+                        required 
+                        pattern="[0-9]*" 
+                      />
                     </div>
                   </div>
                   <div className="form-group">
                     <label htmlFor="phone">Teléfono de Contacto</label>
-                    <input type="tel" id="phone" name="phone" required placeholder="04141234567" pattern="[0-9]*" />
+                    <input 
+                      type="tel" 
+                      id="phone" 
+                      name="phone" 
+                      value={clientInfo.phone}
+                      onChange={(e) => setClientInfo(prev => ({ ...prev, phone: e.target.value }))}
+                      required 
+                      placeholder="04141234567" 
+                      pattern="[0-9]*" 
+                    />
                   </div>
                 </div>
 
@@ -673,7 +791,16 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   </div>
                   <div className="form-group">
                     <label htmlFor="ref">Últimos 6 dígitos (Ref)</label>
-                    <input type="text" id="ref" name="ref" placeholder="Ej. 948210" maxLength="6" required />
+                    <input 
+                      type="text" 
+                      id="ref" 
+                      name="ref" 
+                      placeholder="Ej. 948210" 
+                      maxLength="6" 
+                      value={clientInfo.ref}
+                      onChange={(e) => setClientInfo(prev => ({ ...prev, ref: e.target.value }))}
+                      required 
+                    />
                   </div>
                 </div>
 
@@ -698,7 +825,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
             <button 
               type="button" 
               className="modal-close-btn" 
-              onClick={onClose} 
+              onClick={handleModalClose} 
               aria-label="Cerrar modal"
               style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
             >
@@ -732,7 +859,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
               </p>
             </div>
 
-            <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem', minWidth: '160px'}}>Cerrar</button>
+            <button className="btn-primary" onClick={handleModalClose} style={{marginTop: '2rem', minWidth: '160px'}}>Cerrar</button>
           </div>
         )}
 

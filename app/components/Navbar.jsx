@@ -1,9 +1,12 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const showAnimRef = useRef(null);
 
   const handleHomeClick = (e) => {
     if (typeof window !== 'undefined' && window.location.pathname === '/') {
@@ -12,10 +15,56 @@ export default function Navbar() {
     }
   };
 
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
+
+    const elements = gsap.utils.toArray('.nav-directional-element');
+
+    // Animación directionally-aware al estilo GSAP demo
+    const showAnim = gsap.fromTo(
+      elements,
+      { y: 0, opacity: 1, pointerEvents: 'auto' },
+      {
+        y: -85,
+        opacity: 0,
+        pointerEvents: 'none',
+        duration: 0.35,
+        ease: 'power2.out',
+        paused: true
+      }
+    );
+    showAnimRef.current = showAnim;
+
+    const trigger = ScrollTrigger.create({
+      start: 'top top',
+      end: 'max',
+      onUpdate: (self) => {
+        // Al scrolear hacia ARRIBA (direction === -1) -> mostrar navegación
+        if (self.direction === -1) {
+          showAnim.reverse();
+        } 
+        // Al scrolear hacia ABAJO (direction === 1) después de pasar 80px -> ocultar navegación
+        // (El logo DOCS de la izquierda NUNCA se oculta, permanece visible y fijo)
+        else if (self.direction === 1 && self.scroll() > 80) {
+          showAnim.play();
+        } 
+        // En la parte superior de la página -> siempre visible
+        else if (self.scroll() <= 40) {
+          showAnim.reverse();
+        }
+      }
+    });
+
+    return () => {
+      trigger.kill();
+      showAnim.kill();
+    };
+  }, []);
+
   return (
     <nav className="navbar" id="navbar">
       <div className="nav-container">
-        {/* LOGO DOCS ARRIBA A LA IZQUIERDA (Vuelve al inicio) */}
+        {/* LOGO DOCS ARRIBA A LA IZQUIERDA (NUNCA SE OCULTA AL SCROLEAR) */}
         <Link href="/" className="nav-brand-left" onClick={handleHomeClick} aria-label="Volver al inicio">
           <img 
             src="/Logos/logo-docs-left.png" 
@@ -24,8 +73,8 @@ export default function Navbar() {
           />
         </Link>
         
-        {/* MENÚ DE NAVEGACIÓN SEGÚN LA REFERENCIA */}
-        <div className={`nav-links ${menuOpen ? 'mobile-open' : ''}`}>
+        {/* MENÚ DE NAVEGACIÓN CENTRAL (ANIMADO DIRECCIONALMENTE CON GSAP) */}
+        <div className={`nav-links nav-directional-element ${menuOpen ? 'mobile-open' : ''}`}>
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>EVENTOS</Link>
           <Link href="#tienda" className="nav-link" onClick={() => setMenuOpen(false)}>TIENDA</Link>
           <Link href="#musica" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>
@@ -45,8 +94,8 @@ export default function Navbar() {
           </button>
         </div>
         
-        {/* LADO DERECHO: LOGO CC (Redirige a Instagram) + MENÚ MÓVIL */}
-        <div className="nav-right-wrapper">
+        {/* LADO DERECHO: LOGO CC + MENÚ MÓVIL (ANIMADO DIRECCIONALMENTE CON GSAP) */}
+        <div className="nav-right-wrapper nav-directional-element">
           <a 
             href="https://www.instagram.com/creativocriollo/" 
             target="_blank" 

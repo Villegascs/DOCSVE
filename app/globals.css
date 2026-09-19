@@ -404,11 +404,52 @@ h4 {
     pointer-events: auto;
 }
 
-.hero-logo-flowers-docs {
-    width: clamp(230px, 22vw, 320px);
+.hero-flowers-docs-group {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(0.9rem, 2vw, 1.6rem);
+}
+
+.hero-brand-link {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), filter 0.25s ease, opacity 0.2s ease;
+}
+
+.hero-brand-link:hover {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.8));
+}
+
+.hero-logo-img {
     height: auto;
     object-fit: contain;
-    filter: drop-shadow(0 4px 16px rgba(0, 0, 0, 0.2));
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.25));
+}
+
+.hero-img-flowers {
+    height: clamp(26px, 3.1vw, 42px);
+    width: auto;
+}
+
+.hero-logo-x {
+    color: #ffffff;
+    font-size: clamp(0.9rem, 1.2vw, 1.25rem);
+    font-weight: 300;
+    font-family: var(--font-body);
+    opacity: 0.95;
+    user-select: none;
+    line-height: 1;
+    transform: translateY(-2px);
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hero-img-docs {
+    height: clamp(30px, 3.7vw, 48px);
+    width: auto;
 }
 
 .hero-bottom-date {
@@ -480,8 +521,16 @@ h4 {
         top: 19%;
     }
 
-    .hero-logo-flowers-docs {
-        width: clamp(190px, 48vw, 260px);
+    .hero-flowers-docs-group {
+        gap: 0.75rem;
+    }
+
+    .hero-img-flowers {
+        height: clamp(22px, 5.5vw, 32px);
+    }
+
+    .hero-img-docs {
+        height: clamp(25px, 6.2vw, 36px);
     }
 
     .hero-bottom-date {

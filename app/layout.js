@@ -46,6 +46,11 @@ export const metadata = {
     title: "DÖCS | Eventos",
     description: "DOCS - La experiencia definitiva en fiestas electrónicas.",
   },
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/icon.png',
+  },
   verification: {
     google: "V9HkzDT8MI6TDCDOEqXVtNUzomyFynf9N1Yf6b-Jyig",
   },
@@ -58,6 +63,7 @@ export default function RootLayout({ children }) {
       className={`${inter.variable} ${outfit.variable}`}
     >
       <head>
+        <link rel="icon" href="/icon.png" sizes="any" />
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
       </head>
       <body>{children}</body>

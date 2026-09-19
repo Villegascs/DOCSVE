@@ -35,13 +35,41 @@ export default async function Hero() {
         <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4" type="video/mp4" />
       </video>
 
-      {/* LOGO FLOWERS X DOCS ARRIBA DE WILD BLOOM */}
+      {/* LOGOS INTERACTIVOS FLOWERS X DOCS */}
       <div className="hero-top-logo">
-        <img 
-          src="/Logos/flower-x-docs.png" 
-          alt="FLOWERS x DOCS" 
-          className="hero-logo-flowers-docs"
-        />
+        <div className="hero-flowers-docs-group">
+          <a 
+            href="https://www.instagram.com/flowersss_official/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hero-brand-link hero-link-flowers"
+            aria-label="Instagram Flowers"
+            title="Instagram @flowersss_official"
+          >
+            <img 
+              src="/Logos/logo-flowers.png" 
+              alt="FLOWERS" 
+              className="hero-logo-img hero-img-flowers"
+            />
+          </a>
+
+          <span className="hero-logo-x">x</span>
+
+          <a 
+            href="https://www.instagram.com/docs______/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="hero-brand-link hero-link-docs"
+            aria-label="Instagram DOCS"
+            title="Instagram @docs______"
+          >
+            <img 
+              src="/Logos/logo-docs-letra.png" 
+              alt="DÖCS" 
+              className="hero-logo-img hero-img-docs"
+            />
+          </a>
+        </div>
       </div>
 
       {/* FECHA DEL EVENTO ABAJO DE WILD BLOOM */}

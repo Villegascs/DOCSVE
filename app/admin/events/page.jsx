@@ -17,6 +17,7 @@ export default function AdminEvents() {
     title: '',
     date: '',
     location: '',
+    lineup: '',
     description: '',
     status: 'active',
     isMainEvent: false,
@@ -48,12 +49,14 @@ export default function AdminEvents() {
     if (event) {
       setFormData({
         ...event,
+        lineup: event.lineup || '',
+        description: event.description || '',
         ticketTypes: event.ticketTypes || [],
         drinkPacks: event.drinkPacks || []
       });
     } else {
       setFormData({
-        id: null, title: '', date: '', location: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0, ticketTypes: [], drinkPacks: []
+        id: null, title: '', date: '', location: '', lineup: '', description: '', status: 'active', isMainEvent: false, image_url: '', ticketLimit: 0, ticketTypes: [], drinkPacks: []
       });
     }
     setShowModal(true);
@@ -320,8 +323,24 @@ export default function AdminEvents() {
               </div>
 
               <div className="form-group">
-                <label>Descripción / Lineup</label>
-                <textarea required rows="4" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} style={{width: '100%', background: '#181818', border: '1px solid #2A2A2A', color: 'white', padding: '1rem', borderRadius: '4px'}}></textarea>
+                <label>Lineup / Artistas</label>
+                <input 
+                  type="text" 
+                  value={formData.lineup} 
+                  onChange={e => setFormData({...formData, lineup: e.target.value})} 
+                  placeholder="Ej: DJ Name 1, DJ Name 2, Special Guest (separados por coma o texto)" 
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Descripción de la fiesta</label>
+                <textarea 
+                  rows="3" 
+                  value={formData.description} 
+                  onChange={e => setFormData({...formData, description: e.target.value})} 
+                  placeholder="Breve reseña sobre la experiencia, música y vibra de la fiesta..." 
+                  style={{width: '100%', background: '#181818', border: '1px solid #2A2A2A', color: 'white', padding: '1rem', borderRadius: '4px'}}
+                ></textarea>
               </div>
 
               <div className="form-group">

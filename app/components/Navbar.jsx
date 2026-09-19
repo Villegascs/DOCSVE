@@ -77,8 +77,8 @@ export default function Navbar() {
         <div className={`nav-links nav-directional-element ${menuOpen ? 'mobile-open' : ''}`}>
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>EVENTOS</Link>
           <Link href="#tienda" className="nav-link" onClick={() => setMenuOpen(false)}>TIENDA</Link>
-          <Link href="#musica" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>
-          <Link href="#musica" className="nav-link" onClick={() => setMenuOpen(false)}>PLAYLIST</Link>
+          <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>
+          <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>SESSIONS</Link>
           <Link href="#inicio" className="nav-link" onClick={() => setMenuOpen(false)}>NOSOTROS</Link>
           <button 
             type="button"

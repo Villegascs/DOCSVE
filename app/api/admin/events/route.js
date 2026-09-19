@@ -49,7 +49,7 @@ export async function GET() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { title, date, location, description, image_url, status, isMainEvent, ticketLimit, ticketTypes, drinkPacks } = body;
+    const { title, date, location, lineup, description, image_url, status, isMainEvent, ticketLimit, ticketTypes, drinkPacks } = body;
 
     // Si es el evento principal, actualizar los demas a false
     if (isMainEvent) {
@@ -65,7 +65,8 @@ export async function POST(request) {
       title,
       date,
       location,
-      description,
+      lineup: lineup || '',
+      description: description || '',
       image_url: image_url || '/Multimedia/photo_2026-05-21_17-54-29.jpg', // Fallback temporal
       status: status || 'active',
       isMainEvent: !!isMainEvent,
@@ -87,7 +88,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const body = await request.json();
-    const { id, title, date, location, description, image_url, status, isMainEvent, ticketLimit, ticketTypes, drinkPacks } = body;
+    const { id, title, date, location, lineup, description, image_url, status, isMainEvent, ticketLimit, ticketTypes, drinkPacks } = body;
 
     if (!id) throw new Error('ID is required');
 
@@ -103,7 +104,7 @@ export async function PUT(request) {
     }
 
     const updateData = {
-      title, date, location, description, status, isMainEvent: !!isMainEvent,
+      title, date, location, lineup: lineup || '', description: description || '', status, isMainEvent: !!isMainEvent,
       ticketLimit: Number(ticketLimit) || 0,
       ticketTypes: Array.isArray(ticketTypes) ? ticketTypes : [],
       drinkPacks: Array.isArray(drinkPacks) ? drinkPacks : []

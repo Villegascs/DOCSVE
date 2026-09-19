@@ -12,7 +12,7 @@ export async function GET() {
     });
     
     const info = await transporter.sendMail({
-      from: `"DOCS Underground" <${process.env.EMAIL_USER}>`,
+      from: `"DOCS" <${process.env.EMAIL_USER}>`,
       to: process.env.EMAIL_USER,
       subject: `Prueba SMTP desde Vercel`,
       text: `Si lees esto, Vercel puede enviar correos.`

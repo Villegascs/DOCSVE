@@ -17,8 +17,8 @@ export const metadata = {
     default: "DÖCS | Eventos",
     template: "%s | DÖCS",
   },
-  description: "DOCS - La experiencia definitiva en fiestas electrónicas underground. Compra tus entradas, escucha nuestros sets y sé parte de la comunidad.",
-  keywords: ["DOCS", "DÖCS", "fiestas electrónicas", "música electrónica", "tickets", "eventos", "Caracas", "Venezuela", "underground"],
+  description: "DOCS - La experiencia definitiva en fiestas electrónicas. Compra tus entradas, escucha nuestros sets y sé parte de la comunidad.",
+  keywords: ["DOCS", "DÖCS", "fiestas electrónicas", "música electrónica", "tickets", "eventos", "Caracas", "Venezuela"],
   alternates: {
     canonical: "/",
   },
@@ -35,7 +35,7 @@ export const metadata = {
   },
   openGraph: {
     title: "DÖCS | Eventos",
-    description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
+    description: "DOCS - La experiencia definitiva en fiestas electrónicas.",
     url: "https://www.docsevents.com",
     siteName: "DÖCS Events",
     locale: "es_VE",
@@ -44,7 +44,7 @@ export const metadata = {
   twitter: {
     card: "summary_large_image",
     title: "DÖCS | Eventos",
-    description: "DOCS - La experiencia definitiva en fiestas electrónicas underground.",
+    description: "DOCS - La experiencia definitiva en fiestas electrónicas.",
   },
   verification: {
     google: "V9HkzDT8MI6TDCDOEqXVtNUzomyFynf9N1Yf6b-Jyig",

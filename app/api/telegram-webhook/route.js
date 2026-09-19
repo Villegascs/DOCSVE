@@ -204,7 +204,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     }
 
     const mailOptions = {
-      from: `"DOCS Underground" <${process.env.EMAIL_USER}>`,
+      from: `"DOCS" <${process.env.EMAIL_USER}>`,
       replyTo: process.env.EMAIL_USER,
       to: row.email,
       subject: `🎟️ Tus Entradas confirmadas para ${eventTitle} - ${row.name}`,
@@ -213,7 +213,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         'X-MSMail-Priority': 'High',
         'Importance': 'High'
       },
-      text: `Hola ${row.name},\n\n¡Tu pago de Bs. ${row.total_bs} para ${eventTitle} ha sido confirmado con éxito!\n\nDetalle de tu orden:\n- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDOCS Underground | Eventos y Entretenimiento`,
+      text: `Hola ${row.name},\n\n¡Tu pago de Bs. ${row.total_bs} para ${eventTitle} ha sido confirmado con éxito!\n\nDetalle de tu orden:\n- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDOCS | Eventos y Entretenimiento`,
       html: `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -234,9 +234,9 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
           
           <!-- Encabezado con Marca -->
           <tr>
-            <td style="padding: 30px 30px 20px 30px; text-align: center; background-color: #181818; border-bottom: 2px solid #E0FF00;">
-              <h1 style="margin: 0; font-size: 26px; font-weight: 900; letter-spacing: 2px; color: #ffffff; text-transform: uppercase;">
-                DOCS <span style="color: #E0FF00;">UNDERGROUND</span>
+            <td style="padding: 30px 30px 20px 30px; text-align: center; background-color: #181818; border-bottom: 2px solid #ffffff;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 3px; color: #ffffff; text-transform: uppercase;">
+                DOCS
               </h1>
               <p style="margin: 6px 0 0 0; font-size: 14px; color: #aaaaaa;">Confirmación Oficial de Entradas</p>
             </td>
@@ -298,10 +298,10 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
                 ¿No puedes ver las imágenes? Haz clic en <strong>"Mostrar imágenes"</strong> o <strong>"Permitir siempre imágenes de este remitente"</strong>.
               </p>
               <p style="margin: 0 0 10px 0; font-size: 12px; color: #666666; line-height: 1.5;">
-                Recibes este correo porque completaste un pedido en DOCS Underground. Si tienes preguntas o necesitas soporte, responde directamente a este mensaje.
+                Recibes este correo porque completaste un pedido en DOCS. Si tienes preguntas o necesitas soporte, responde directamente a este mensaje.
               </p>
               <p style="margin: 0; font-size: 11px; color: #444444;">
-                © ${new Date().getFullYear()} DOCS Underground. Todos los derechos reservados.
+                © ${new Date().getFullYear()} DOCS. Todos los derechos reservados.
               </p>
             </td>
           </tr>

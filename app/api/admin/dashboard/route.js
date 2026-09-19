@@ -44,9 +44,10 @@ export async function GET() {
       }
     });
 
-    // Contar tickets escaneados
+    // Contar tickets escaneados (solo entradas, no servicios/cupones)
     qrSnapshot.forEach(doc => {
-      if (doc.data().scanned) {
+      const data = doc.data();
+      if ((data.scanned || data.status === 'used') && data.type !== 'coupon') {
         scannedTickets++;
       }
     });

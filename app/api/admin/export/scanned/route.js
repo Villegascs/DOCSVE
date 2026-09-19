@@ -25,7 +25,7 @@ export async function GET(req) {
         const qrSnap = await db.collection('qr_codes').where('status', '==', 'used').get();
         qrSnap.forEach(doc => {
           const data = doc.data();
-          if (ticketIds.includes(data.ticket_id)) {
+          if (ticketIds.includes(data.ticket_id) && data.type !== 'coupon') {
             // Find ticket name
             const ticketData = ticketsSnap.docs.find(t => t.id === data.ticket_id)?.data();
             qrs.push({ id: doc.id, ...data, ticket_name: ticketData?.name || 'Desconocido' });
@@ -44,7 +44,9 @@ export async function GET(req) {
       
       qrSnap.forEach(doc => {
         const data = doc.data();
-        qrs.push({ id: doc.id, ...data, ticket_name: ticketsMap[data.ticket_id] || 'Desconocido' });
+        if (data.type !== 'coupon') {
+          qrs.push({ id: doc.id, ...data, ticket_name: ticketsMap[data.ticket_id] || 'Desconocido' });
+        }
       });
     }
 

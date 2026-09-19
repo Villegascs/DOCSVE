@@ -35,7 +35,7 @@ export default function AdminScannedTickets() {
   // Filter only tickets that have at least one scanned QR code
   const scannedData = tickets.flatMap(ticket => {
     const qrs = ticket.qr_codes || [];
-    const scannedQrs = qrs.filter(qr => qr.status === 'used');
+    const scannedQrs = qrs.filter(qr => qr.status === 'used' && qr.type !== 'coupon');
     
     return scannedQrs.map(qr => ({
       ...qr,

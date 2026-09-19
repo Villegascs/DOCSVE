@@ -37,7 +37,7 @@ export default function AdminTickets() {
     : tickets.filter(t => t.event_id === selectedEventId);
 
   const totalTickets = filteredTickets.reduce((acc, t) => acc + Number(t.ticket_count || 0), 0);
-  const scannedQRs = filteredTickets.reduce((acc, t) => acc + (t.qr_codes || []).filter(qr => qr.status === 'used').length, 0);
+  const scannedQRs = filteredTickets.reduce((acc, t) => acc + (t.qr_codes || []).filter(qr => qr.status === 'used' && qr.type !== 'coupon').length, 0);
 
   return (
     <>
@@ -102,7 +102,7 @@ export default function AdminTickets() {
               ) : (
                 filteredTickets.map(ticket => {
                   const qrs = ticket.qr_codes || [];
-                  const scannedCount = qrs.filter(qr => qr.status === 'used').length;
+                  const scannedCount = qrs.filter(qr => qr.status === 'used' && qr.type !== 'coupon').length;
                   const date = ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('es-VE', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'}) : '-';
                   
                   return (

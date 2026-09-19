@@ -1,7 +1,35 @@
 "use client";
 import { useState, useEffect } from 'react';
 
-export default function PurchaseModal({ event, onClose }) {
+export default function PurchaseModal({ event: initialEvent, onClose, onPurchaseSuccess }) {
+  const [event, setEvent] = useState(initialEvent);
+
+  // Sync real-time stock immediately and poll while modal is open
+  useEffect(() => {
+    let isMounted = true;
+    async function syncStock() {
+      try {
+        const res = await fetch('/api/admin/events');
+        const data = await res.json();
+        if (data.success && isMounted) {
+          const freshEvent = data.events.find(e => e.id === initialEvent.id);
+          if (freshEvent) {
+            setEvent(freshEvent);
+          }
+        }
+      } catch (err) {
+        console.error('Error syncing stock:', err);
+      }
+    }
+
+    syncStock();
+    const interval = setInterval(syncStock, 3500);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [initialEvent.id]);
+
   // Helper to calculate available tickets for a ticket type and event
   const calculateAvailableForType = (type) => {
     let max = 20; // Default limit per purchase
@@ -22,10 +50,10 @@ export default function PurchaseModal({ event, onClose }) {
   };
 
   const [selectedTicketType, setSelectedTicketType] = useState(() => {
-    if (event.ticketTypes && event.ticketTypes.length > 0) {
+    if (initialEvent.ticketTypes && initialEvent.ticketTypes.length > 0) {
       // Default to first available ticket type with stock
-      const availableType = event.ticketTypes.find(t => calculateAvailableForType(t) > 0);
-      return availableType || event.ticketTypes[0];
+      const availableType = initialEvent.ticketTypes.find(t => calculateAvailableForType(t) > 0);
+      return availableType || initialEvent.ticketTypes[0];
     }
     return null;
   });
@@ -34,8 +62,8 @@ export default function PurchaseModal({ event, onClose }) {
 
   const [ticketCount, setTicketCount] = useState(() => {
     const available = calculateAvailableForType(
-      event.ticketTypes && event.ticketTypes.length > 0 
-        ? (event.ticketTypes.find(t => calculateAvailableForType(t) > 0) || event.ticketTypes[0])
+      initialEvent.ticketTypes && initialEvent.ticketTypes.length > 0 
+        ? (initialEvent.ticketTypes.find(t => calculateAvailableForType(t) > 0) || initialEvent.ticketTypes[0])
         : null
     );
     return available > 0 ? 1 : 0;
@@ -175,6 +203,7 @@ export default function PurchaseModal({ event, onClose }) {
       }
 
       setSuccess(true);
+      onPurchaseSuccess?.();
     } catch (error) {
       console.error(error);
       alert('Error: ' + error.message);

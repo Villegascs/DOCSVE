@@ -6,9 +6,11 @@ export async function GET() {
   try {
     const snapshot = await db.collection('events').orderBy('date', 'desc').get();
     
-    // Get approved tickets to calculate sold amount
-    const ticketsSnapshot = await db.collection('tickets').where('status', '==', 'approved').get();
-    const tickets = ticketsSnapshot.docs.map(doc => doc.data());
+    // Get active tickets (approved and pending) to calculate sold/reserved amount
+    const ticketsSnapshot = await db.collection('tickets').get();
+    const tickets = ticketsSnapshot.docs
+      .map(doc => doc.data())
+      .filter(t => t.status === 'approved' || t.status === 'pending');
 
     const events = snapshot.docs.map(doc => {
       const data = doc.data();

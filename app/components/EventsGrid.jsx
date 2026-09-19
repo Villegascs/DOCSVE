@@ -9,31 +9,35 @@ export default function EventsGrid() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchEvents() {
-      try {
-        const res = await fetch('/api/admin/events');
-        const data = await res.json();
-        if (data.success) {
-          // Format date for display
-          const formattedEvents = data.events.map(evt => {
-            const d = new Date(evt.date);
-            const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
-            return {
-              ...evt,
-              displayDate: d.getDate().toString(),
-              displayMonth: months[d.getMonth()]
-            };
-          });
-          setEvents(formattedEvents);
-        }
-      } catch (error) {
-        console.error('Error fetching events:', error);
-      } finally {
-        setLoading(false);
+  const fetchEvents = async () => {
+    try {
+      const res = await fetch('/api/admin/events');
+      const data = await res.json();
+      if (data.success) {
+        // Format date for display
+        const formattedEvents = data.events.map(evt => {
+          const d = new Date(evt.date);
+          const months = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+          return {
+            ...evt,
+            displayDate: d.getDate().toString(),
+            displayMonth: months[d.getMonth()]
+          };
+        });
+        setEvents(formattedEvents);
       }
+    } catch (error) {
+      console.error('Error fetching events:', error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
     fetchEvents();
+    // Background polling every 8 seconds for live stock numbers across the website
+    const interval = setInterval(fetchEvents, 8000);
+    return () => clearInterval(interval);
   }, []);
 
   const handleBuyClick = (evt) => {
@@ -90,6 +94,7 @@ export default function EventsGrid() {
         <PurchaseModal 
           event={selectedEvent} 
           onClose={() => setModalOpen(false)} 
+          onPurchaseSuccess={fetchEvents}
         />
       )}
     </>

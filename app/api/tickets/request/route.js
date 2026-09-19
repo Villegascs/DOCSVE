@@ -28,60 +28,87 @@ export async function POST(req) {
     const arrayBuffer = await receiptFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Validate Event Capacity
-    const eventDoc = await db.collection('events').doc(eventId).get();
-    if (eventDoc.exists) {
-      const eventData = eventDoc.data();
-      const ticketTypeConfig = eventData.ticketTypes?.find(t => t.name === ticketTypeName);
-      
-      // Calculate sold tickets for this event
-      const ticketsSnap = await db.collection('tickets')
-        .where('event_id', '==', eventId)
-        .where('status', '==', 'approved')
-        .get();
-        
-      let soldForType = 0;
-      let totalSold = 0;
-      ticketsSnap.forEach(tDoc => {
-        const tData = tDoc.data();
-        const count = Number(tData.ticket_count) || 1;
-        totalSold += count;
-        if ((tData.ticket_type || 'Entrada General') === ticketTypeName) {
-          soldForType += count;
+    // Atomic validation and ticket creation via Firestore Transaction to eliminate race conditions
+    let insertId;
+    try {
+      insertId = await db.runTransaction(async (transaction) => {
+        const eventRef = db.collection('events').doc(eventId);
+        const eventDoc = await transaction.get(eventRef);
+
+        if (eventDoc.exists) {
+          const eventData = eventDoc.data();
+          const ticketTypeConfig = eventData.ticketTypes?.find(t => t.name === ticketTypeName);
+
+          // Read all tickets for this event within the transaction
+          const ticketsQuery = db.collection('tickets').where('event_id', '==', eventId);
+          const ticketsSnap = await transaction.get(ticketsQuery);
+
+          let soldForType = 0;
+          let totalSold = 0;
+          ticketsSnap.forEach(tDoc => {
+            const tData = tDoc.data();
+            // Count both approved and pending (reserved) tickets
+            if (tData.status === 'approved' || tData.status === 'pending') {
+              const count = Number(tData.ticket_count) || 1;
+              totalSold += count;
+              if ((tData.ticket_type || 'Entrada General') === ticketTypeName) {
+                soldForType += count;
+              }
+            }
+          });
+
+          // 1. Overall event limit check
+          if (eventData.ticketLimit > 0 && (totalSold + ticketCount) > eventData.ticketLimit) {
+            const availableTotal = Math.max(0, eventData.ticketLimit - totalSold);
+            const err = new Error(
+              availableTotal > 0
+                ? `Lo sentimos, otro cliente acaba de adquirir entradas. Solo quedan ${availableTotal} entrada(s) disponibles.`
+                : 'Lo sentimos, las entradas para este evento acaban de agotarse.'
+            );
+            err.isStockError = true;
+            throw err;
+          }
+
+          // 2. Ticket type limit check
+          if (ticketTypeConfig && ticketTypeConfig.limit > 0 && (soldForType + ticketCount) > ticketTypeConfig.limit) {
+            const availableForType = Math.max(0, ticketTypeConfig.limit - soldForType);
+            const err = new Error(
+              availableForType > 0
+                ? `Lo sentimos, otro cliente acaba de adquirir entradas de "${ticketTypeName}". Solo quedan ${availableForType} disponibles.`
+                : `Lo sentimos, la entrada "${ticketTypeName}" se acaba de agotar.`
+            );
+            err.isStockError = true;
+            throw err;
+          }
+
+          // Update event timestamp to guarantee conflict detection for concurrent transactions
+          transaction.update(eventRef, {
+            last_order_at: new Date()
+          });
         }
+
+        // Save new ticket to Firestore
+        const newTicketRef = db.collection('tickets').doc();
+        transaction.set(newTicketRef, {
+          name, email, cedula, phone, bank, ref,
+          ticket_count: ticketCount,
+          ticket_type: ticketTypeName,
+          drink_packs: drinkPacks,
+          total_bs: totalBs,
+          total_eur: parseFloat(totalEur) || 0,
+          event_id: eventId,
+          status: 'pending',
+          created_at: new Date()
+        });
+
+        return newTicketRef.id;
       });
-
-      // 1. Overall event limit check
-      if (eventData.ticketLimit > 0 && (totalSold + ticketCount) > eventData.ticketLimit) {
-        const availableTotal = Math.max(0, eventData.ticketLimit - totalSold);
-        return NextResponse.json({ 
-          error: `No hay suficientes cupos para este evento. Solo quedan ${availableTotal} entrada(s) disponibles en total.` 
-        }, { status: 400 });
+    } catch (txError) {
+      if (txError.isStockError) {
+        return NextResponse.json({ error: txError.message }, { status: 400 });
       }
-
-      // 2. Ticket type limit check
-      if (ticketTypeConfig && ticketTypeConfig.limit > 0 && (soldForType + ticketCount) > ticketTypeConfig.limit) {
-        const availableForType = Math.max(0, ticketTypeConfig.limit - soldForType);
-        return NextResponse.json({ 
-          error: `Solo quedan ${availableForType} entrada(s) disponibles para "${ticketTypeName}".` 
-        }, { status: 400 });
-      }
+      throw txError;
     }
-
-    // Save ticket to Firestore
-    const ticketRef = await db.collection('tickets').add({
-      name, email, cedula, phone, bank, ref,
-      ticket_count: ticketCount,
-      ticket_type: ticketTypeName,
-      drink_packs: drinkPacks,
-      total_bs: totalBs,
-      total_eur: parseFloat(totalEur) || 0,
-      event_id: eventId,
-      status: 'pending',
-      created_at: new Date()
-    });
-    
-    const insertId = ticketRef.id;
 
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {

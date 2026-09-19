@@ -448,14 +448,13 @@
 #reader {
   position: relative;
   width: 100% !important;
-  border: 1px solid rgba(224, 255, 0, 0.3) !important;
+  background: #000;
+  border-radius: 10px;
+  overflow: hidden;
 }
 
 #reader video {
   width: 100% !important;
-  height: auto !important;
-  max-height: 480px;
-  object-fit: cover;
   border-radius: 8px;
 }
 

@@ -9,6 +9,7 @@ export default function AdminScanner() {
   const [cameras, setCameras] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
   const [cameraError, setCameraError] = useState('');
+  const [isSwitching, setIsSwitching] = useState(false);
   const scannerRef = useRef(null);
 
   const processScan = async (uuid) => {
@@ -43,100 +44,139 @@ export default function AdminScanner() {
     setUuidInput('');
   };
 
+  const getScannerConfig = () => ({
+    fps: 10,
+    qrbox: (viewfinderWidth, viewfinderHeight) => {
+      const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+      const edge = Math.max(180, Math.floor(minEdge * 0.72));
+      return { width: edge, height: edge };
+    }
+  });
+
+  const onScanSuccess = (decodedText) => {
+    if (scannerRef.current) {
+      try {
+        scannerRef.current.pause(true);
+      } catch (_) {}
+    }
+    processScan(decodedText).then(() => {
+      setTimeout(() => {
+        if (scannerRef.current) {
+          try {
+            const state = scannerRef.current.getState();
+            if (state === 3) scannerRef.current.resume();
+          } catch (_) {}
+        }
+      }, 3000);
+    });
+  };
+
+  const onScanFailure = () => {};
+
   useEffect(() => {
-    let html5QrCode = null;
     let isCancelled = false;
 
     if (!isScanning) {
+      if (scannerRef.current) {
+        const scanner = scannerRef.current;
+        scannerRef.current = null;
+        try {
+          const state = scanner.getState();
+          if (state === 2 || state === 3) {
+            scanner.stop().then(() => {
+              try { scanner.clear(); } catch (_) {}
+            }).catch(() => {});
+            return;
+          }
+        } catch (_) {}
+        try { scanner.clear(); } catch (_) {}
+      }
       return;
     }
 
-    const startScanner = async () => {
+    const initScanner = async () => {
       setCameraError('');
       try {
-        html5QrCode = new Html5Qrcode("reader");
-        scannerRef.current = html5QrCode;
+        if (scannerRef.current) {
+          try {
+            await scannerRef.current.stop();
+            scannerRef.current.clear();
+          } catch (_) {}
+          scannerRef.current = null;
+        }
 
+        const scanner = new Html5Qrcode("reader");
+        scannerRef.current = scanner;
+
+        // Intentar iniciar directamente con la cámara trasera estándar W3C { facingMode: "environment" }
         try {
+          await scanner.start(
+            { facingMode: "environment" },
+            getScannerConfig(),
+            onScanSuccess,
+            onScanFailure
+          );
+        } catch (facingErr) {
+          console.warn("facingMode 'environment' no disponible directamente, buscando lista de cámaras:", facingErr);
           const deviceList = await Html5Qrcode.getCameras();
-          if (!isCancelled && deviceList && deviceList.length > 0) {
-            setCameras(deviceList);
-          }
-        } catch (camErr) {
-          console.log("No se pudo enumerar cámaras previas:", camErr);
-        }
+          if (deviceList && deviceList.length > 0) {
+            const backCam = deviceList.find(c => 
+              /back|rear|trasera|posterior|environment|extern/i.test(c.label) &&
+              !/front|frontal|user/i.test(c.label)
+            ) || deviceList[0];
 
-        const config = {
-          fps: 10,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-            const edge = Math.floor(minEdge * 0.72);
-            return { width: edge, height: edge };
-          },
-          aspectRatio: 1.0
-        };
-
-        const onScanSuccess = (decodedText) => {
-          if (scannerRef.current) {
-            try {
-              scannerRef.current.pause(true);
-            } catch (_) {}
-          }
-          processScan(decodedText).then(() => {
-            setTimeout(() => {
-              if (scannerRef.current) {
-                try {
-                  const state = scannerRef.current.getState();
-                  if (state === 3) scannerRef.current.resume();
-                } catch (_) {}
-              }
-            }, 3000);
-          });
-        };
-
-        const onScanFailure = () => {};
-
-        const cameraTarget = selectedCameraId ? selectedCameraId : { facingMode: "environment" };
-
-        try {
-          await html5QrCode.start(cameraTarget, config, onScanSuccess, onScanFailure);
-        } catch (startErr) {
-          console.warn("Fallo con facingMode environment, intentando fallback:", startErr);
-          const fallbackList = await Html5Qrcode.getCameras();
-          if (fallbackList && fallbackList.length > 0) {
-            if (!isCancelled) setCameras(fallbackList);
-            const rearCam = fallbackList.find(c => /back|rear|trasera|posterior|environment/i.test(c.label)) || fallbackList[0];
-            if (!isCancelled) setSelectedCameraId(rearCam.id);
-            await html5QrCode.start(rearCam.id, config, onScanSuccess, onScanFailure);
+            await scanner.start(
+              backCam.id,
+              getScannerConfig(),
+              onScanSuccess,
+              onScanFailure
+            );
+            if (!isCancelled) setSelectedCameraId(backCam.id);
           } else {
-            throw startErr;
+            throw facingErr;
           }
         }
 
+        // Obtener lista completa de cámaras una vez otorgado el permiso
         try {
-          const freshList = await Html5Qrcode.getCameras();
-          if (!isCancelled && freshList && freshList.length > 0) {
-            setCameras(freshList);
-            if (!selectedCameraId) {
-              const rearCam = freshList.find(c => /back|rear|trasera|posterior|environment/i.test(c.label));
-              if (rearCam) setSelectedCameraId(rearCam.id);
+          const freshCameras = await Html5Qrcode.getCameras();
+          if (!isCancelled && freshCameras && freshCameras.length > 0) {
+            setCameras(freshCameras);
+            const backCam = freshCameras.find(c => 
+              /back|rear|trasera|posterior|environment|extern/i.test(c.label) &&
+              !/front|frontal|user/i.test(c.label)
+            );
+            if (backCam) {
+              setSelectedCameraId(backCam.id);
             }
           }
-        } catch (_) {}
+        } catch (camListErr) {
+          console.log("No se pudo obtener lista de cámaras:", camListErr);
+        }
 
       } catch (err) {
         console.error("Error al iniciar cámara:", err);
         if (!isCancelled) {
-          setCameraError(err.message || 'No se pudo acceder a la cámara trasera.');
+          const msg = err?.message || '';
+          if (msg.includes('NotAllowedError') || msg.includes('Permission')) {
+            setCameraError('Permiso denegado. Por favor permite el acceso a la cámara en tu navegador.');
+          } else if (msg.includes('NotFoundError')) {
+            setCameraError('No se encontró ninguna cámara disponible en tu dispositivo.');
+          } else {
+            setCameraError('No se pudo acceder a la cámara trasera. Asegúrate de dar permisos de cámara.');
+          }
           setIsScanning(false);
         }
       }
     };
 
-    startScanner();
+    const timer = setTimeout(() => {
+      initScanner();
+    }, 100);
 
     return () => {
       isCancelled = true;
+      clearTimeout(timer);
       if (scannerRef.current) {
         const scanner = scannerRef.current;
         scannerRef.current = null;
@@ -152,7 +192,36 @@ export default function AdminScanner() {
         try { scanner.clear(); } catch (_) {}
       }
     };
-  }, [isScanning, selectedCameraId]);
+  }, [isScanning]);
+
+  const handleSwitchCamera = async (e) => {
+    const newCameraId = e.target.value;
+    setSelectedCameraId(newCameraId);
+    
+    if (!scannerRef.current || isSwitching) return;
+    setIsSwitching(true);
+    setCameraError('');
+
+    try {
+      const scanner = scannerRef.current;
+      const state = scanner.getState();
+      if (state === 2 || state === 3) {
+        await scanner.stop();
+      }
+      await new Promise(r => setTimeout(r, 250));
+      await scanner.start(
+        newCameraId,
+        getScannerConfig(),
+        onScanSuccess,
+        onScanFailure
+      );
+    } catch (err) {
+      console.error("Error switching camera:", err);
+      setCameraError('No se pudo cambiar a esa cámara.');
+    } finally {
+      setIsSwitching(false);
+    }
+  };
 
   return (
     <>
@@ -196,11 +265,27 @@ export default function AdminScanner() {
                 <span style={{fontSize: '2.2rem'}}>📷</span>
                 <span style={{fontWeight: 800}}>Iniciar Escaneo</span>
                 <span style={{fontSize: '0.85rem', opacity: 0.8, fontWeight: 'normal'}}>
-                  (Toma automáticamente la cámara trasera)
+                  (Activa directamente la cámara trasera)
                 </span>
               </button>
-            ) : (
-              <div>
+            ) : null}
+
+            {/* Container for scanner (always in DOM so Html5Qrcode calculates dimensions reliably) */}
+            <div 
+              id="reader" 
+              style={{
+                display: isScanning ? 'block' : 'none',
+                width: '100%', 
+                borderRadius: '10px', 
+                overflow: 'hidden', 
+                border: isScanning ? '1px solid rgba(224, 255, 0, 0.4)' : 'none',
+                background: '#000',
+                minHeight: isScanning ? '280px' : '0'
+              }}
+            ></div>
+
+            {isScanning && (
+              <div style={{marginTop: '1rem'}}>
                 {cameras.length > 1 && (
                   <div style={{
                     marginBottom: '0.8rem',
@@ -217,7 +302,8 @@ export default function AdminScanner() {
                     </span>
                     <select
                       value={selectedCameraId}
-                      onChange={(e) => setSelectedCameraId(e.target.value)}
+                      onChange={handleSwitchCamera}
+                      disabled={isSwitching}
                       style={{
                         flex: 1,
                         padding: '0.45rem 0.6rem',
@@ -238,22 +324,10 @@ export default function AdminScanner() {
                   </div>
                 )}
 
-                <div 
-                  id="reader" 
-                  style={{
-                    width: '100%', 
-                    borderRadius: '10px', 
-                    overflow: 'hidden', 
-                    border: '1px solid #333',
-                    background: '#000',
-                    minHeight: '280px'
-                  }}
-                ></div>
-
                 <button 
                   onClick={() => setIsScanning(false)}
                   className="btn-secondary full-width"
-                  style={{marginTop: '1rem', padding: '0.8rem'}}
+                  style={{padding: '0.8rem'}}
                 >
                   Detener Escaneo
                 </button>

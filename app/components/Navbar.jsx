@@ -6,7 +6,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const showAnimRef = useRef(null);
 
   const handleHomeClick = (e) => {
     if (typeof window !== 'undefined' && window.location.pathname === '/') {
@@ -15,50 +14,66 @@ export default function Navbar() {
     }
   };
 
+  // Bloquear scroll del fondo cuando el menú móvil esté abierto
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (menuOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
+    }
+    return () => {
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
+  }, [menuOpen]);
+
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const elements = gsap.utils.toArray('.nav-directional-element');
+    // Activar animación GSAP ÚNICAMENTE en pantallas de escritorio (> 960px)
+    // De este modo, GSAP nunca inyectará estilos inline de transform en el menú móvil
+    const mm = gsap.matchMedia();
 
-    // Animación directionally-aware al estilo GSAP demo
-    const showAnim = gsap.fromTo(
-      elements,
-      { y: 0, opacity: 1, pointerEvents: 'auto' },
-      {
-        y: -85,
-        opacity: 0,
-        pointerEvents: 'none',
-        duration: 0.35,
-        ease: 'power2.out',
-        paused: true
-      }
-    );
-    showAnimRef.current = showAnim;
+    mm.add("(min-width: 961px)", () => {
+      const elements = gsap.utils.toArray('.nav-directional-element');
 
-    const trigger = ScrollTrigger.create({
-      start: 'top top',
-      end: 'max',
-      onUpdate: (self) => {
-        // Al scrolear hacia ARRIBA (direction === -1) -> mostrar navegación
-        if (self.direction === -1) {
-          showAnim.reverse();
-        } 
-        // Al scrolear hacia ABAJO (direction === 1) después de pasar 80px -> ocultar navegación
-        // (El logo DOCS de la izquierda NUNCA se oculta, permanece visible y fijo)
-        else if (self.direction === 1 && self.scroll() > 80) {
-          showAnim.play();
-        } 
-        // En la parte superior de la página -> siempre visible
-        else if (self.scroll() <= 40) {
-          showAnim.reverse();
+      const showAnim = gsap.fromTo(
+        elements,
+        { y: 0, opacity: 1, pointerEvents: 'auto' },
+        {
+          y: -85,
+          opacity: 0,
+          pointerEvents: 'none',
+          duration: 0.35,
+          ease: 'power2.out',
+          paused: true
         }
-      }
+      );
+
+      const trigger = ScrollTrigger.create({
+        start: 'top top',
+        end: 'max',
+        onUpdate: (self) => {
+          if (self.direction === -1) {
+            showAnim.reverse();
+          } else if (self.direction === 1 && self.scroll() > 80) {
+            showAnim.play();
+          } else if (self.scroll() <= 40) {
+            showAnim.reverse();
+          }
+        }
+      });
+
+      return () => {
+        trigger.kill();
+        showAnim.kill();
+      };
     });
 
-    return () => {
-      trigger.kill();
-      showAnim.kill();
-    };
+    return () => mm.revert();
   }, []);
 
   return (
@@ -73,8 +88,18 @@ export default function Navbar() {
           />
         </Link>
         
-        {/* MENÚ DE NAVEGACIÓN CENTRAL (ANIMADO DIRECCIONALMENTE CON GSAP) */}
+        {/* MENÚ DE NAVEGACIÓN CENTRAL / DRAWER MÓVIL */}
         <div className={`nav-links nav-directional-element ${menuOpen ? 'mobile-open' : ''}`}>
+          {/* Botón de cierre visible en móvil */}
+          <button 
+            type="button" 
+            className="mobile-close-btn" 
+            onClick={() => setMenuOpen(false)}
+            aria-label="Cerrar menú"
+          >
+            ✕
+          </button>
+
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>EVENTOS</Link>
           <Link href="#tienda" className="nav-link" onClick={() => setMenuOpen(false)}>TIENDA</Link>
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>
@@ -94,7 +119,7 @@ export default function Navbar() {
           </button>
         </div>
         
-        {/* LADO DERECHO: LOGO CC + MENÚ MÓVIL (ANIMADO DIRECCIONALMENTE CON GSAP) */}
+        {/* LADO DERECHO: LOGO CC + BOTÓN HAMBURGUESA */}
         <div className="nav-right-wrapper nav-directional-element">
           <a 
             href="https://www.instagram.com/creativocriollo/" 
@@ -111,8 +136,9 @@ export default function Navbar() {
           </a>
 
           <button 
-            className="mobile-menu-btn" 
-            aria-label="Abrir menú"
+            type="button"
+            className={`mobile-menu-btn ${menuOpen ? 'open' : ''}`} 
+            aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <span></span>

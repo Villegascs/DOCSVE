@@ -10,6 +10,7 @@ export default function SecurityScanner() {
   const [cameraError, setCameraError] = useState('');
   const [cameras, setCameras] = useState([]);
   const [selectedCameraId, setSelectedCameraId] = useState('');
+  const [activeCameraLabel, setActiveCameraLabel] = useState('');
   const scannerRef = useRef(null);
 
   // Auth states
@@ -105,7 +106,42 @@ export default function SecurityScanner() {
     setUuidInput('');
   };
 
-  // Gestión de la cámara
+  // Escaneo mediante subida / captura nativa de cámara
+  const handleFileScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCameraLoading(true);
+    setCameraError('');
+
+    try {
+      const { Html5Qrcode } = await import('html5-qrcode');
+      const tempId = "file-scanner-temp";
+      let tempElem = document.getElementById(tempId);
+      if (!tempElem) {
+        tempElem = document.createElement("div");
+        tempElem.id = tempId;
+        tempElem.style.display = "none";
+        document.body.appendChild(tempElem);
+      }
+      const fileScanner = new Html5Qrcode(tempId);
+      const decoded = await fileScanner.scanFile(file, false);
+      try { fileScanner.clear(); } catch (_) {}
+      if (tempElem && tempElem.parentNode) {
+        tempElem.parentNode.removeChild(tempElem);
+      }
+      if (decoded) {
+        processScan(decoded);
+      }
+    } catch (err) {
+      console.error("Error al procesar foto:", err);
+      setCameraError("No se detectó un código QR legible en la foto. Intenta enfocar más cerca con buena luz.");
+    } finally {
+      setCameraLoading(false);
+      e.target.value = '';
+    }
+  };
+
+  // Gestión de la cámara en vivo
   useEffect(() => {
     if (!isScanning) {
       if (scannerRef.current) {
@@ -138,13 +174,14 @@ export default function SecurityScanner() {
         const readerElem = document.getElementById("reader");
         if (!readerElem) return;
 
-        // Limpiar instancia previa si existe
+        // Limpiar instancia previa
         if (scannerRef.current) {
           try {
             const st = scannerRef.current.getState();
             if (st === 2 || st === 3) await scannerRef.current.stop();
             scannerRef.current.clear();
           } catch (_) {}
+          scannerRef.current = null;
         }
 
         const html5QrCode = new Html5Qrcode("reader");
@@ -170,58 +207,116 @@ export default function SecurityScanner() {
           processScan(decodedText);
         };
 
-        const onScanFailure = () => {
-          // Ignorar cuadros sin QR
-        };
+        const onScanFailure = () => {};
+
+        // 1. Revisar si el navegador ya conoce dispositivos con etiquetas (permiso previo)
+        let knownCameras = [];
+        try {
+          knownCameras = await Html5Qrcode.getCameras();
+        } catch (_) {}
+
+        // Encontrar cámara trasera explícita si los nombres están disponibles
+        const bestRearCamera = knownCameras.find(c => 
+          (c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('trasera') || c.label.toLowerCase().includes('posterior')) &&
+          (c.label.toLowerCase().includes('wide') || c.label.toLowerCase().includes('amplia') || c.label.toLowerCase().includes('0') || c.label.toLowerCase().includes('1'))
+        ) || knownCameras.find(c => 
+          /back|rear|trasera|posterior|environment/i.test(c.label) &&
+          !/front|frontal|user|truedepth/i.test(c.label)
+        );
 
         let cameraStarted = false;
 
-        // Si ya hay una cámara específica elegida por el usuario
+        // Si el usuario ya había seleccionado un ID específico
         if (selectedCameraId) {
           try {
             await html5QrCode.start(selectedCameraId, qrConfig, onScanSuccess, onScanFailure);
             cameraStarted = true;
           } catch (camErr) {
-            console.warn("No se pudo iniciar con la cámara seleccionada, intentando modo environment:", camErr);
+            console.warn("Fallo cámara previa seleccionada:", camErr);
           }
         }
 
-        // Intento 1: cámara trasera nativa con facingMode environment (Estándar para iOS y Android)
+        // Si conocemos la cámara trasera exacta por ID
+        if (!cameraStarted && bestRearCamera?.id) {
+          try {
+            await html5QrCode.start(bestRearCamera.id, qrConfig, onScanSuccess, onScanFailure);
+            if (!isCancelled) {
+              setSelectedCameraId(bestRearCamera.id);
+              setActiveCameraLabel(bestRearCamera.label || 'Cámara trasera');
+            }
+            cameraStarted = true;
+          } catch (idErr) {
+            console.warn("Fallo inicio con ID de cámara trasera:", idErr);
+          }
+        }
+
+        // Para iOS WebKit: Forzar cámara trasera obligatoria con { exact: "environment" }
         if (!cameraStarted) {
           try {
-            await html5QrCode.start({ facingMode: "environment" }, qrConfig, onScanSuccess, onScanFailure);
+            await html5QrCode.start(
+              { facingMode: { exact: "environment" } },
+              qrConfig,
+              onScanSuccess,
+              onScanFailure
+            );
             cameraStarted = true;
-          } catch (envErr) {
-            console.warn("Fallo facingMode environment, buscando lista de dispositivos:", envErr);
+            if (!isCancelled) setActiveCameraLabel('Cámara trasera (Forzada)');
+          } catch (exactErr) {
+            console.warn("exact environment no soportado en este dispositivo, probando modo estándar:", exactErr);
           }
         }
 
-        // Intento 2: Buscar dispositivo trasero en getCameras()
+        // Modo estándar facingMode "environment"
+        if (!cameraStarted) {
+          try {
+            await html5QrCode.start(
+              { facingMode: "environment" },
+              qrConfig,
+              onScanSuccess,
+              onScanFailure
+            );
+            cameraStarted = true;
+            if (!isCancelled) setActiveCameraLabel('Cámara trasera');
+          } catch (envErr) {
+            console.warn("Fallo facingMode environment:", envErr);
+          }
+        }
+
+        // Último fallback: obtener lista completa e iniciar con la última (habitualmente trasera en Android)
         if (!cameraStarted) {
           const deviceList = await Html5Qrcode.getCameras();
           if (deviceList && deviceList.length > 0) {
-            // Priorizar cámara trasera amplia/principal
-            const rearCam = deviceList.find(d => 
-              (d.label.toLowerCase().includes('amplia') || d.label.toLowerCase().includes('wide') || d.label.toLowerCase().includes('0')) &&
-              (d.label.toLowerCase().includes('posterior') || d.label.toLowerCase().includes('trasera') || d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment'))
-            ) || deviceList.find(d => 
-              (d.label.toLowerCase().includes('posterior') || d.label.toLowerCase().includes('trasera') || d.label.toLowerCase().includes('back') || d.label.toLowerCase().includes('environment')) &&
-              !d.label.toLowerCase().includes('front')
-            ) || deviceList[deviceList.length - 1]; // En Android el último suele ser la trasera
-
-            await html5QrCode.start(rearCam.id, qrConfig, onScanSuccess, onScanFailure);
-            if (!isCancelled) setSelectedCameraId(rearCam.id);
+            const fallbackRear = deviceList.find(d => !/front|frontal|user|truedepth/i.test(d.label)) || deviceList[deviceList.length - 1];
+            await html5QrCode.start(fallbackRear.id, qrConfig, onScanSuccess, onScanFailure);
+            if (!isCancelled) {
+              setSelectedCameraId(fallbackRear.id);
+              setActiveCameraLabel(fallbackRear.label || 'Cámara seleccionada');
+            }
             cameraStarted = true;
           } else {
             throw new Error("No se detectó ninguna cámara disponible en este dispositivo.");
           }
         }
 
-        // Cargar lista completa de cámaras para el selector si hay varias
+        // Actualizar lista ordenada de cámaras (cámaras traseras primero)
         try {
           const freshList = await Html5Qrcode.getCameras();
           if (!isCancelled && freshList && freshList.length > 0) {
-            setCameras(freshList);
+            const sorted = [...freshList].sort((a, b) => {
+              const aRear = /back|rear|trasera|posterior|environment/i.test(a.label);
+              const bRear = /back|rear|trasera|posterior|environment/i.test(b.label);
+              if (aRear && !bRear) return -1;
+              if (!aRear && bRear) return 1;
+              return 0;
+            });
+            setCameras(sorted);
+            
+            // Si selectedCameraId estaba vacío, seleccionar la primera trasera
+            if (!selectedCameraId) {
+              const rear = sorted.find(c => /back|rear|trasera|posterior|environment/i.test(c.label)) || sorted[0];
+              setSelectedCameraId(rear.id);
+              setActiveCameraLabel(rear.label);
+            }
           }
         } catch (_) {}
 
@@ -235,11 +330,11 @@ export default function SecurityScanner() {
           setCameraLoading(false);
           let userMsg = "No se pudo acceder a la cámara trasera. Asegúrate de otorgar permisos.";
           if (err.name === "NotAllowedError" || err.message?.includes("Permission") || err.message?.includes("denied")) {
-            userMsg = "Permiso de cámara bloqueado. Por favor permite el acceso a la cámara en los ajustes de tu navegador o celular.";
+            userMsg = "Permiso de cámara bloqueado. Ve a Ajustes > Safari / Chrome > Cámara y permite el acceso a docsevents.com.";
           } else if (err.name === "NotFoundError") {
             userMsg = "No se encontró cámara disponible en el dispositivo.";
           } else if (err.name === "NotReadableError") {
-            userMsg = "La cámara está ocupada por otra app. Ciérrala e inténtalo de nuevo.";
+            userMsg = "La cámara está en uso por otra app. Ciérrala e inténtalo de nuevo.";
           }
           setCameraError(userMsg);
           setIsScanning(false);
@@ -268,18 +363,28 @@ export default function SecurityScanner() {
     };
   }, [isScanning]);
 
+  // Cambiar de cámara mediante selección
   const handleCameraChange = async (newDeviceId) => {
-    if (!scannerRef.current || !newDeviceId) return;
+    if (!newDeviceId) return;
     setSelectedCameraId(newDeviceId);
+    const camObj = cameras.find(c => c.id === newDeviceId);
+    if (camObj) setActiveCameraLabel(camObj.label);
+
     setCameraLoading(true);
     setCameraError('');
 
     try {
-      const scanner = scannerRef.current;
-      const state = scanner.getState();
-      if (state === 2 || state === 3) {
-        await scanner.stop();
+      const { Html5Qrcode } = await import('html5-qrcode');
+      if (scannerRef.current) {
+        const state = scannerRef.current.getState();
+        if (state === 2 || state === 3) {
+          await scannerRef.current.stop();
+        }
+        try { scannerRef.current.clear(); } catch (_) {}
       }
+
+      const freshScanner = new Html5Qrcode("reader");
+      scannerRef.current = freshScanner;
 
       const qrConfig = {
         fps: 10,
@@ -290,7 +395,7 @@ export default function SecurityScanner() {
         }
       };
 
-      await scanner.start(
+      await freshScanner.start(
         newDeviceId,
         qrConfig,
         (decodedText) => {
@@ -309,6 +414,14 @@ export default function SecurityScanner() {
     } finally {
       setCameraLoading(false);
     }
+  };
+
+  // Botón directo para alternar cámara (Girar)
+  const flipCamera = () => {
+    if (cameras.length < 2) return;
+    const currentIndex = cameras.findIndex(c => c.id === selectedCameraId);
+    const nextIndex = (currentIndex + 1) % cameras.length;
+    handleCameraChange(cameras[nextIndex].id);
   };
 
   const closeResultOverlay = () => {
@@ -413,9 +526,24 @@ export default function SecurityScanner() {
       </div>
 
       <div style={{display: 'flex', gap: '2rem', flexWrap: 'wrap', padding: '0 1rem 2rem'}}>
-        <div className="admin-table-container" style={{flex: '1 1 400px', padding: '2rem'}}>
-          <h3>Escáner de Cámara</h3>
-          <div style={{marginTop: '1rem'}}>
+        <div className="admin-table-container" style={{flex: '1 1 400px', padding: '1.5rem'}}>
+          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
+            <h3 style={{margin: 0}}>Escáner de Cámara</h3>
+            {isScanning && (
+              <span style={{
+                fontSize: '0.75rem', 
+                background: activeCameraLabel.toLowerCase().includes('front') || activeCameraLabel.toLowerCase().includes('user') ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                color: activeCameraLabel.toLowerCase().includes('front') || activeCameraLabel.toLowerCase().includes('user') ? '#f87171' : '#34d399',
+                padding: '0.25rem 0.6rem',
+                borderRadius: '20px',
+                border: '1px solid currentColor'
+              }}>
+                {activeCameraLabel.toLowerCase().includes('front') || activeCameraLabel.toLowerCase().includes('user') ? '🤳 Frontal' : '📷 Trasera'}
+              </span>
+            )}
+          </div>
+
+          <div>
             {cameraError && (
               <div style={{
                 background: 'rgba(239, 68, 68, 0.15)',
@@ -431,65 +559,114 @@ export default function SecurityScanner() {
             )}
 
             {!isScanning ? (
-              <button 
-                onClick={() => setIsScanning(true)}
-                className="btn-primary full-width"
-                style={{
-                  padding: '2.5rem 1rem',
-                  fontSize: '1.2rem',
+              <div>
+                <button 
+                  onClick={() => setIsScanning(true)}
+                  className="btn-primary full-width"
+                  style={{
+                    padding: '2.2rem 1rem',
+                    fontSize: '1.2rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    borderRadius: '12px'
+                  }}
+                >
+                  <span style={{fontSize: '2.5rem'}}>📷</span>
+                  <span style={{fontWeight: 800}}>Iniciar Escáner en Vivo</span>
+                  <span style={{fontSize: '0.85rem', opacity: 0.85, fontWeight: 'normal'}}>
+                    (Activa la cámara trasera de tu iPhone)
+                  </span>
+                </button>
+
+                {/* Alternativa: Tomar foto directa con la cámara nativa de iOS */}
+                <label style={{
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: '0.6rem',
-                  borderRadius: '10px'
-                }}
-              >
-                <span style={{fontSize: '2.5rem'}}>📷</span>
-                <span style={{fontWeight: 800}}>Iniciar Escaneo</span>
-                <span style={{fontSize: '0.85rem', opacity: 0.85, fontWeight: 'normal'}}>
-                  (Abre automáticamente la cámara trasera)
-                </span>
-              </button>
+                  padding: '1rem',
+                  cursor: 'pointer',
+                  borderRadius: '10px',
+                  marginTop: '1rem',
+                  border: '1px dashed rgba(224, 255, 0, 0.4)',
+                  background: 'rgba(224, 255, 0, 0.05)',
+                  color: 'white',
+                  fontWeight: '600',
+                  textAlign: 'center',
+                  fontSize: '0.92rem'
+                }}>
+                  <span style={{fontSize: '1.3rem'}}>📸</span>
+                  <span>Tomar Foto con Cámara del iPhone / Subir QR</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={handleFileScan}
+                  />
+                </label>
+              </div>
             ) : (
               <div>
-                {/* Selector de cámara si hay más de 1 dispositivo */}
-                {cameras.length > 1 && (
-                  <div style={{
-                    marginBottom: '0.8rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.6rem',
-                    background: 'rgba(255,255,255,0.04)',
-                    padding: '0.6rem 0.8rem',
-                    borderRadius: '8px',
-                    border: '1px solid rgba(255,255,255,0.08)'
-                  }}>
-                    <span style={{fontSize: '0.85rem', color: 'var(--primary-neon, #E0FF00)', fontWeight: 'bold', whiteSpace: 'nowrap'}}>
-                      📷 Cámara:
-                    </span>
+                {/* Barra de control de cámara (Selector y botón para girar cámara) */}
+                <div style={{
+                  marginBottom: '0.8rem',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  flexWrap: 'wrap'
+                }}>
+                  {cameras.length > 1 && (
+                    <button
+                      onClick={flipCamera}
+                      className="btn-secondary"
+                      style={{
+                        padding: '0.55rem 0.9rem',
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        background: '#222',
+                        borderColor: '#444'
+                      }}
+                      title="Girar entre cámaras disponibles"
+                    >
+                      🔄 <span>Girar Cámara</span>
+                    </button>
+                  )}
+
+                  {cameras.length > 1 && (
                     <select
                       value={selectedCameraId}
                       onChange={(e) => handleCameraChange(e.target.value)}
                       style={{
                         flex: 1,
-                        padding: '0.5rem 0.7rem',
+                        minWidth: '150px',
+                        padding: '0.5rem 0.6rem',
                         background: '#151515',
                         border: '1px solid #333',
                         borderRadius: '6px',
                         color: '#fff',
-                        fontSize: '0.85rem',
+                        fontSize: '0.8rem',
                         outline: 'none'
                       }}
                     >
-                      {cameras.map((cam, idx) => (
-                        <option key={cam.id || idx} value={cam.id}>
-                          {cam.label || `Cámara ${idx + 1}`}
-                        </option>
-                      ))}
+                      {cameras.map((cam, idx) => {
+                        const isRear = /back|rear|trasera|posterior|environment/i.test(cam.label);
+                        const isFront = /front|frontal|user/i.test(cam.label);
+                        const prefix = isRear ? '📷 Trasera: ' : isFront ? '🤳 Frontal: ' : '📷 ';
+                        return (
+                          <option key={cam.id || idx} value={cam.id}>
+                            {prefix}{cam.label || `Cámara ${idx + 1}`}
+                          </option>
+                        );
+                      })}
                     </select>
-                  </div>
-                )}
+                  )}
+                </div>
 
                 {cameraLoading && (
                   <div style={{
@@ -499,7 +676,7 @@ export default function SecurityScanner() {
                     fontSize: '0.9rem',
                     fontWeight: 600
                   }}>
-                    ⏳ Conectando cámara trasera...
+                    ⏳ Conectando cámara trasera del iPhone...
                   </div>
                 )}
 
@@ -515,19 +692,47 @@ export default function SecurityScanner() {
                   }}
                 ></div>
 
-                <button 
-                  onClick={() => setIsScanning(false)}
-                  className="btn-secondary full-width"
-                  style={{marginTop: '1rem', padding: '0.8rem'}}
-                >
-                  Detener Escaneo
-                </button>
+                <div style={{display: 'flex', gap: '0.8rem', marginTop: '1rem'}}>
+                  <label style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.4rem',
+                    padding: '0.75rem',
+                    cursor: 'pointer',
+                    borderRadius: '6px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    color: '#ddd',
+                    fontSize: '0.85rem',
+                    fontWeight: '600',
+                    textAlign: 'center'
+                  }}>
+                    <span>📸 Tomar Foto</span>
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={handleFileScan}
+                    />
+                  </label>
+
+                  <button 
+                    onClick={() => setIsScanning(false)}
+                    className="btn-secondary"
+                    style={{padding: '0.75rem 1.2rem', fontSize: '0.85rem'}}
+                  >
+                    Detener
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="admin-table-container" style={{flex: '1 1 400px', padding: '2rem', display: 'flex', flexDirection: 'column'}}>
+        <div className="admin-table-container" style={{flex: '1 1 400px', padding: '1.5rem', display: 'flex', flexDirection: 'column'}}>
           <h3>Ingreso Manual</h3>
           <form onSubmit={handleManualScan} style={{marginTop: '1rem'}}>
             <div className="form-group admin-form">

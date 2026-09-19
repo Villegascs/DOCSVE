@@ -325,32 +325,42 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
 
             <form className="payment-form" onSubmit={handleSubmit}>
               <div className="form-group">
-                <label htmlFor="ticketCount" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                  <span>Número de Entradas</span>
+                <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem'}}>
+                  <label htmlFor="ticketCount" style={{margin: 0}}>Número de Entradas</label>
                   {maxAvailableTickets > 0 && (
                     <span style={{fontSize: '0.85rem', color: 'var(--primary-neon)', fontWeight: '600'}}>
                       {maxAvailableTickets} {maxAvailableTickets === 1 ? 'disponible' : 'disponibles'}
                     </span>
                   )}
-                </label>
-                <select 
-                  id="ticketCount" 
-                  name="ticketCount"
-                  value={ticketCount} 
-                  onChange={(e) => setTicketCount(Number(e.target.value))}
-                  disabled={maxAvailableTickets <= 0}
-                  required 
-                >
-                  {maxAvailableTickets <= 0 ? (
-                    <option value="0">Agotado (0 disponibles)</option>
-                  ) : (
-                    Array.from({ length: maxAvailableTickets }, (_, i) => i + 1).map(num => (
-                      <option key={num} value={num}>
-                        {num} {num === 1 ? 'entrada' : 'entradas'} {num === maxAvailableTickets && maxAvailableTickets < 20 ? '(Máximo disponible)' : ''}
-                      </option>
-                    ))
-                  )}
-                </select>
+                </div>
+
+                <div className="quantity-stepper">
+                  <button 
+                    type="button" 
+                    className="stepper-btn"
+                    onClick={() => setTicketCount(prev => Math.max(1, prev - 1))}
+                    disabled={ticketCount <= 1 || maxAvailableTickets <= 0}
+                    aria-label="Disminuir cantidad"
+                  >
+                    −
+                  </button>
+                  <div className="stepper-value">
+                    <span className="stepper-number">{maxAvailableTickets <= 0 ? 0 : ticketCount}</span>
+                    <span className="stepper-unit">
+                      {maxAvailableTickets <= 0 ? 'Agotado' : (ticketCount === 1 ? 'entrada' : 'entradas')}
+                    </span>
+                  </div>
+                  <button 
+                    type="button" 
+                    className="stepper-btn"
+                    onClick={() => setTicketCount(prev => Math.min(maxAvailableTickets, prev + 1))}
+                    disabled={ticketCount >= maxAvailableTickets || maxAvailableTickets <= 0}
+                    aria-label="Aumentar cantidad"
+                  >
+                    +
+                  </button>
+                </div>
+                <input type="hidden" id="ticketCount" name="ticketCount" value={ticketCount} />
               </div>
 
               <div className="form-group">

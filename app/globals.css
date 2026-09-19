@@ -822,6 +822,83 @@ h4 {
     background: #1C1C1C;
 }
 
+/* ================= Quantity Stepper (- 1 +) ================= */
+.quantity-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #141414;
+    border: 1px solid #2A2A2A;
+    border-radius: 8px;
+    padding: 0.4rem 0.5rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    user-select: none;
+}
+
+.quantity-stepper:hover {
+    border-color: #3e3e3e;
+}
+
+.stepper-btn {
+    background: #202020;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    width: 48px;
+    height: 44px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    line-height: 1;
+}
+
+.stepper-btn:hover:not(:disabled) {
+    background: var(--primary-neon);
+    color: #000000;
+    border-color: var(--primary-neon);
+    transform: scale(1.05);
+}
+
+.stepper-btn:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.stepper-btn:disabled {
+    opacity: 0.25;
+    cursor: not-allowed;
+    background: #181818;
+    color: #555555;
+    border-color: transparent;
+}
+
+.stepper-value {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.45rem;
+    flex: 1;
+    text-align: center;
+}
+
+.stepper-number {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #ffffff;
+    font-family: var(--font-heading, sans-serif);
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+.stepper-unit {
+    font-size: 0.9rem;
+    color: #888888;
+    font-weight: 600;
+}
+
 .file-upload input {
     padding: 0;
     font-size: 0.85rem;

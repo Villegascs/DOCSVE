@@ -10,8 +10,6 @@ export default function AdminConsumos() {
 
   useEffect(() => {
     fetchConsumos();
-    const interval = setInterval(fetchConsumos, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   const fetchConsumos = async () => {

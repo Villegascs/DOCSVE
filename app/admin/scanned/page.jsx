@@ -28,8 +28,6 @@ export default function AdminScannedTickets() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000);
-    return () => clearInterval(interval);
   }, []);
 
   // Filter only tickets that have at least one scanned QR code

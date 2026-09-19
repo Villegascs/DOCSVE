@@ -2,7 +2,16 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+let ticketsCache = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 20 * 1000;
+
 export async function GET() {
+  const now = Date.now();
+  if (ticketsCache && (now - lastCacheTime) < CACHE_TTL_MS) {
+    return NextResponse.json({ success: true, tickets: ticketsCache, cached: true });
+  }
+
   try {
     const ticketsSnapshot = await db.collection('tickets').orderBy('created_at', 'desc').get();
     const qrSnapshot = await db.collection('qr_codes').get();
@@ -30,9 +39,22 @@ export async function GET() {
       };
     });
 
+    ticketsCache = tickets;
+    lastCacheTime = now;
+
     return NextResponse.json({ success: true, tickets });
   } catch (error) {
     console.error('Error fetching tickets:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const isQuota = error.message?.includes('RESOURCE_EXHAUSTED') || error.code === 8;
+
+    if (ticketsCache) {
+      return NextResponse.json({ success: true, tickets: ticketsCache, cached: true, isQuotaExceeded: isQuota });
+    }
+
+    return NextResponse.json({ 
+      success: false, 
+      isQuotaExceeded: isQuota,
+      error: error.message 
+    }, { status: isQuota ? 429 : 500 });
   }
 }

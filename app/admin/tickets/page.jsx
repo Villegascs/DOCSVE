@@ -28,8 +28,6 @@ export default function AdminTickets() {
 
   useEffect(() => {
     fetchData();
-    const interval = setInterval(fetchData, 10000); // Auto-refresh every 10 seconds
-    return () => clearInterval(interval);
   }, []);
 
   const filteredTickets = selectedEventId === 'all' 

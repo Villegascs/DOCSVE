@@ -2,7 +2,16 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
+let dashboardCache = null;
+let lastCacheTime = 0;
+const CACHE_TTL_MS = 20 * 1000; // 20 segundos de caché para ahorrar lecturas de Firestore
+
 export async function GET() {
+  const now = Date.now();
+  if (dashboardCache && (now - lastCacheTime) < CACHE_TTL_MS) {
+    return NextResponse.json({ ...dashboardCache, cached: true });
+  }
+
   try {
     const ticketsSnapshot = await db.collection('tickets').orderBy('created_at', 'desc').get();
     const qrSnapshot = await db.collection('qr_codes').get();
@@ -52,7 +61,7 @@ export async function GET() {
       }
     });
 
-    return NextResponse.json({
+    const result = {
       success: true,
       stats: {
         totalTickets,
@@ -62,9 +71,25 @@ export async function GET() {
         scannedTickets
       },
       latestPayments
-    });
+    };
+
+    dashboardCache = result;
+    lastCacheTime = now;
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const isQuota = error.message?.includes('RESOURCE_EXHAUSTED') || error.code === 8;
+    
+    // Si tenemos datos en caché previos, devolverlos
+    if (dashboardCache) {
+      return NextResponse.json({ ...dashboardCache, isQuotaExceeded: isQuota, cached: true });
+    }
+
+    return NextResponse.json({ 
+      success: false, 
+      isQuotaExceeded: isQuota,
+      error: error.message 
+    }, { status: isQuota ? 429 : 500 });
   }
 }

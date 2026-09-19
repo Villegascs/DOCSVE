@@ -4,18 +4,26 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 const token = process.env.TELEGRAM_BOT_TOKEN;
 const adminChatIds = process.env.TELEGRAM_ADMIN_CHAT_ID ? process.env.TELEGRAM_ADMIN_CHAT_ID.split(',').map(id => id.trim()) : [];
+function escapeTgHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export async function POST(req) {
   try {
     const formData = await req.formData();
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const cedula = formData.get('cedula');
-    const phone = formData.get('phone');
-    const bank = formData.get('bank');
-    const ref = formData.get('ref');
-    const ticketCount = parseInt(formData.get('ticketCount'), 10);
-    const totalBs = formData.get('totalBs');
-    const totalEur = formData.get('totalEur');
+    const name = formData.get('name') || '';
+    const email = formData.get('email') || '';
+    const cedula = formData.get('cedula') || '';
+    const phone = formData.get('phone') || '';
+    const bank = formData.get('bank') || '';
+    const ref = formData.get('ref') || '';
+    const ticketCount = parseInt(formData.get('ticketCount'), 10) || 1;
+    const totalBs = formData.get('totalBs') || '0';
+    const totalEur = formData.get('totalEur') || '0';
     const eventId = formData.get('eventId') || 'default_event';
     const ticketTypeName = formData.get('ticketTypeName') || 'Entrada General';
     const drinkPacks = formData.get('drinkPacks') || '';
@@ -28,6 +36,8 @@ export async function POST(req) {
     const arrayBuffer = await receiptFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
+    let recordedEventTitle = 'DOCS';
+
     // Atomic validation and ticket creation via Firestore Transaction to eliminate race conditions
     let insertId;
     try {
@@ -36,7 +46,8 @@ export async function POST(req) {
         const eventDoc = await transaction.get(eventRef);
 
         if (eventDoc.exists) {
-          const eventData = eventDoc.data();
+          const eventData = eventDoc.data() || {};
+          recordedEventTitle = eventData.title || 'DOCS';
           const ticketTypeConfig = eventData.ticketTypes?.find(t => t.name === ticketTypeName);
 
           // Read all tickets for this event within the transaction
@@ -99,6 +110,7 @@ export async function POST(req) {
           total_bs: totalBs,
           total_eur: parseFloat(totalEur) || 0,
           event_id: eventId,
+          event_title: recordedEventTitle,
           status: 'pending',
           created_at: new Date()
         });
@@ -118,8 +130,8 @@ export async function POST(req) {
 
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {
-      const drinkPacksText = drinkPacks ? `\n🍾 <b>Combos</b>: ${drinkPacks}` : '';
-      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n👤 <b>Nombre</b>: ${name}\n📧 <b>Email</b>: ${email}\n🆔 <b>Cédula</b>: ${cedula}\n📱 <b>Teléfono</b>: ${phone}\n🎟 <b>Entradas</b>: ${ticketCount}x ${ticketTypeName}${drinkPacksText}\n💰 <b>Total Bs</b>: ${totalBs}\n🏦 <b>Banco</b>: ${bank} (Ref: ${ref})`;
+      const drinkPacksText = drinkPacks ? `\n🍾 <b>Combos</b>: ${escapeTgHtml(drinkPacks)}` : '';
+      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n🎪 <b>Evento</b>: ${escapeTgHtml(recordedEventTitle)}\n👤 <b>Nombre</b>: ${escapeTgHtml(name)}\n📧 <b>Email</b>: ${escapeTgHtml(email)}\n🆔 <b>Cédula</b>: ${escapeTgHtml(cedula)}\n📱 <b>Teléfono</b>: ${escapeTgHtml(phone)}\n🎟 <b>Entradas</b>: ${ticketCount}x ${escapeTgHtml(ticketTypeName)}${drinkPacksText}\n💰 <b>Total Bs</b>: ${escapeTgHtml(totalBs)}\n🏦 <b>Banco</b>: ${escapeTgHtml(bank)} (Ref: ${escapeTgHtml(ref)})`;
 
       for (const chatId of adminChatIds) {
         try {

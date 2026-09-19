@@ -74,18 +74,25 @@ export async function POST(req) {
 
         if (text === '/ventas' || text === '/escaneadas') {
           const action = text === '/ventas' ? 'expVentas' : 'expScan';
-          const eventsSnap = await db.collection('events').where('status', '==', 'active').get();
+          try {
+            const eventsSnap = await db.collection('events').get();
 
-          const buttons = [];
-          buttons.push([{ text: 'Todos los Eventos', callback_data: `${action}_all` }]);
+            const buttons = [];
+            buttons.push([{ text: '📊 Todos los Eventos', callback_data: `${action}_all` }]);
 
-          eventsSnap.forEach(doc => {
-            buttons.push([{ text: doc.data().title, callback_data: `${action}_${doc.id}` }]);
-          });
+            eventsSnap.forEach(doc => {
+              const evData = doc.data() || {};
+              const title = (evData.title || 'Evento').substring(0, 28);
+              buttons.push([{ text: `🎪 ${title}`, callback_data: `${action}_${doc.id}` }]);
+            });
 
-          await sendTgMessage(chatId, `¿De qué evento deseas exportar ${text === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
-            reply_markup: { inline_keyboard: buttons }
-          });
+            await sendTgMessage(chatId, `¿De qué evento deseas exportar ${text === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
+              reply_markup: { inline_keyboard: buttons }
+            });
+          } catch (err) {
+            console.error("Error al obtener eventos para Telegram:", err);
+            await sendTgMessage(chatId, `⚠️ Error al consultar eventos: ${err.message}`);
+          }
         }
       }
     }
@@ -99,25 +106,37 @@ export async function POST(req) {
 
 async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
   try {
+    if (callbackQueryId) {
+      answerTgCallbackQuery(callbackQueryId, { text: "⏳ Procesando aprobación..." }).catch(() => {});
+    }
+
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
 
-    if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
-    const row = ticketDoc.data();
+    if (!ticketDoc.exists) return sendTgMessage(chatId, "⚠️ Error: No se encontró el ticket en la base de datos.");
+    const row = ticketDoc.data() || {};
 
     if (row.status !== 'pending') {
-      answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+      if (callbackQueryId) {
+        answerTgCallbackQuery(callbackQueryId, { text: "ℹ️ Este pago ya fue procesado." }).catch(() => {});
+      }
       return;
     }
 
     await ticketRef.update({ status: 'approved' });
 
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
-      parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
-    }).catch(console.error);
-    await answerTgCallbackQuery(callbackQueryId).catch(console.error);
+    try {
+      await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n✅ <b>APROBADO</b>`, {
+        parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+      });
+    } catch (captionErr) {
+      console.error("Fallo editando caption con HTML, reintentando modo plano:", captionErr);
+      await editTgMessageCaption(chatId, messageId, `✅ PAGO APROBADO CON ÉXITO`, {
+        reply_markup: { inline_keyboard: [] }
+      }).catch(console.error);
+    }
 
-    const ticketCount = row.ticket_count;
+    const ticketCount = Math.max(1, parseInt(row.ticket_count, 10) || 1);
     const drinkPacksList = row.drink_packs ? row.drink_packs.split(',').map(s => s.trim()).filter(Boolean) : [];
     const attachments = [];
     let qrHtml = '';
@@ -190,12 +209,12 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       `;
     }
 
-    // Fetch event title if available
-    let eventTitle = "DOCS";
+    // Fetch event title safely (use row.event_title or live title from events collection)
+    let eventTitle = row.event_title || "DOCS";
     if (row.event_id) {
       try {
         const evDoc = await db.collection('events').doc(row.event_id).get();
-        if (evDoc.exists && evDoc.data().title) {
+        if (evDoc.exists && evDoc.data()?.title) {
           eventTitle = evDoc.data().title;
         }
       } catch (err) {
@@ -332,30 +351,44 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
 
 async function handleReject(id, chatId, messageId, caption, callbackQueryId) {
   try {
+    if (callbackQueryId) {
+      answerTgCallbackQuery(callbackQueryId, { text: "⏳ Rechazando pago..." }).catch(() => {});
+    }
+
     const ticketRef = db.collection('tickets').doc(id);
     const ticketDoc = await ticketRef.get();
-    if (!ticketDoc.exists) return sendTgMessage(chatId, "Error encontrando el ticket.");
+    if (!ticketDoc.exists) return sendTgMessage(chatId, "⚠️ Error: No se encontró el ticket en la base de datos.");
 
-    const row = ticketDoc.data();
+    const row = ticketDoc.data() || {};
     if (row.status !== 'pending') {
-      answerTgCallbackQuery(callbackQueryId, { text: "Este pago ya fue procesado." }).catch(console.error);
+      if (callbackQueryId) {
+        answerTgCallbackQuery(callbackQueryId, { text: "ℹ️ Este pago ya fue procesado." }).catch(() => {});
+      }
       return;
     }
 
     await ticketRef.update({ status: 'rejected' });
 
-    await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
-      parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
-    }).catch(console.error);
-    await answerTgCallbackQuery(callbackQueryId, { text: "Pago rechazado." }).catch(console.error);
+    try {
+      await editTgMessageCaption(chatId, messageId, `${caption || 'NUEVO PAGO'}\n\n❌ <b>RECHAZADO</b>`, {
+        parse_mode: 'HTML', reply_markup: { inline_keyboard: [] }
+      });
+    } catch (captionErr) {
+      await editTgMessageCaption(chatId, messageId, `❌ PAGO RECHAZADO`, {
+        reply_markup: { inline_keyboard: [] }
+      }).catch(console.error);
+    }
   } catch (e) {
     console.error("Error en handleReject:", e);
+    await sendTgMessage(chatId, `⚠️ Error al rechazar: ${e.message}`).catch(console.error);
   }
 }
 
 async function handleExport(eventId, chatId, callbackQueryId, type) {
   try {
-    await answerTgCallbackQuery(callbackQueryId, { text: "Generando reporte..." });
+    if (callbackQueryId) {
+      await answerTgCallbackQuery(callbackQueryId, { text: "⏳ Generando reporte..." }).catch(() => {});
+    }
 
     let csv = '';
     let filename = '';
@@ -367,6 +400,11 @@ async function handleExport(eventId, chatId, callbackQueryId, type) {
       const snap = await query.get();
       let tickets = [];
       snap.forEach(doc => tickets.push({ id: doc.id, ...doc.data() }));
+
+      if (tickets.length === 0) {
+        await sendTgMessage(chatId, `ℹ️ No hay entradas registradas para este evento.`);
+        return;
+      }
 
       // Sort in memory to avoid composite index requirement
       tickets.sort((a, b) => {
@@ -401,6 +439,12 @@ async function handleExport(eventId, chatId, callbackQueryId, type) {
           qrs.push({ id: doc.id, ...doc.data(), ticket_name: tMap[doc.data().ticket_id] || 'Desconocido' });
         });
       }
+
+      if (qrs.length === 0) {
+        await sendTgMessage(chatId, `ℹ️ No hay entradas escaneadas registradas para este evento.`);
+        return;
+      }
+
       csv = convertScannedToCSV(qrs);
       filename = `escaneadas_${eventId}.csv`;
     }
@@ -417,6 +461,6 @@ async function handleExport(eventId, chatId, callbackQueryId, type) {
 
   } catch (e) {
     console.error("Error en handleExport:", e);
-    await sendTgMessage(chatId, `Error exportando: ${e.message}`);
+    await sendTgMessage(chatId, `⚠️ Error exportando datos: ${e.message}`).catch(console.error);
   }
 }

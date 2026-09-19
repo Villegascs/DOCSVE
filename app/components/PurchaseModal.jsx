@@ -236,37 +236,47 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   return (
     <div className="modal active" onClick={(e) => { if (e.target.className.includes('modal active')) onClose(); }}>
       <div className="modal-content custom-modal">
-        <span className="close-modal" onClick={onClose}>&times;</span>
         
         {!success ? (
           <>
-            {/* Stepper Navigation */}
-            <div className="checkout-stepper">
+            {/* Top Bar with Stepper & Close Button */}
+            <div className="modal-top-bar">
+              <div className="checkout-stepper">
+                <button 
+                  type="button" 
+                  className={`stepper-step ${currentStep === 1 ? 'active' : 'completed'}`}
+                  onClick={handleBackToStep1}
+                >
+                  <span className="step-number">1.</span>
+                  <span className="step-full">Entradas y Servicios</span>
+                  <span className="step-short">Entradas</span>
+                </button>
+
+                <div className={`stepper-divider ${currentStep === 2 ? 'completed' : ''}`} />
+
+                <button 
+                  type="button" 
+                  className={`stepper-step ${currentStep === 2 ? 'active' : ''}`}
+                  onClick={() => {
+                    if (maxAvailableTickets > 0 && ticketCount > 0) {
+                      handleContinueToPayment();
+                    }
+                  }}
+                  style={{ cursor: (maxAvailableTickets > 0 && ticketCount > 0) ? 'pointer' : 'not-allowed' }}
+                >
+                  <span className="step-number">2.</span>
+                  <span className="step-full">Verificación de Pago</span>
+                  <span className="step-short">Pago</span>
+                </button>
+              </div>
+
               <button 
                 type="button" 
-                className={`stepper-step ${currentStep === 1 ? 'active' : 'completed'}`}
-                onClick={handleBackToStep1}
+                className="modal-close-btn" 
+                onClick={onClose} 
+                aria-label="Cerrar modal"
               >
-                <span className="step-number">1.</span>
-                <span className="step-full">Selección de Entradas y Servicios</span>
-                <span className="step-short">Entradas y Servicios</span>
-              </button>
-
-              <div className={`stepper-divider ${currentStep === 2 ? 'completed' : ''}`} />
-
-              <button 
-                type="button" 
-                className={`stepper-step ${currentStep === 2 ? 'active' : ''}`}
-                onClick={() => {
-                  if (maxAvailableTickets > 0 && ticketCount > 0) {
-                    handleContinueToPayment();
-                  }
-                }}
-                style={{ cursor: (maxAvailableTickets > 0 && ticketCount > 0) ? 'pointer' : 'default' }}
-              >
-                <span className="step-number">2.</span>
-                <span className="step-full">Verificación de Pago</span>
-                <span className="step-short">Verificación</span>
+                &times;
               </button>
             </div>
 
@@ -465,22 +475,45 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   <div className="bank-col">
                     <div className="bank-details">
                       <h4>PAGO MÓVIL</h4>
-                      <p className="copyable" onClick={() => copyText('0172', 'banco')}>Banco: Bancamiga (0172) {copiedKey === 'banco' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                      <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>Cédula: 31253699 {copiedKey === 'cedula' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                      <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>Teléfono: 0424-7509224 {copiedKey === 'telefono' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                      <p>Monto: <strong style={{color: 'white'}}>Bs. {totalBs}</strong> <span style={{fontSize: '0.8rem', color: '#888'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</span></p>
-                    </div>
-                    <div className="bank-details" style={{marginTop: '1.5rem'}}>
-                      <h4>BINANCE (USDT)</h4>
-                      <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>Correo (Binance Pay): zbcaj33@gmail.com {copiedKey === 'binance' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p className="copyable" onClick={() => copyText('0172', 'banco')}>
+                        <span>Banco: Bancamiga (0172)</span>
+                        <span className="copy-badge">{copiedKey === 'banco' ? '✓ Copiado' : 'Copiar'}</span>
+                      </p>
+                      <p className="copyable" onClick={() => copyText('31253699', 'cedula')}>
+                        <span>Cédula: 31253699</span>
+                        <span className="copy-badge">{copiedKey === 'cedula' ? '✓ Copiado' : 'Copiar'}</span>
+                      </p>
+                      <p className="copyable" onClick={() => copyText('04247509224', 'telefono')}>
+                        <span>Teléfono: 0424-7509224</span>
+                        <span className="copy-badge">{copiedKey === 'telefono' ? '✓ Copiado' : 'Copiar'}</span>
+                      </p>
+                      <div style={{ marginTop: '0.6rem', padding: '0.45rem 0.65rem', background: 'rgba(255,255,255,0.03)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <div style={{fontSize: '0.78rem', color: '#999'}}>Monto exacto a transferir:</div>
+                        <div style={{fontSize: '1rem', fontWeight: 'bold', color: '#ffffff', marginTop: '0.1rem'}}>Bs. {totalBs}</div>
+                        <div style={{fontSize: '0.72rem', color: '#777', marginTop: '0.15rem'}}>(Tasa BCV EUR: Bs. {currentRateEUR})</div>
+                      </div>
                     </div>
                   </div>
                   
                   <div className="bank-col">
                     <div className="bank-details">
                       <h4>ZELLE</h4>
-                      <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>Correo: contactofabianramirez@gmail.com {copiedKey === 'zcorreo' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
-                      <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>Titular: Fabian Ramirez {copiedKey === 'ztitular' && <span style={{color: 'var(--primary-neon)', marginLeft: '0.5rem'}}>✓</span>}</p>
+                      <p className="copyable" onClick={() => copyText('contactofabianramirez@gmail.com', 'zcorreo')}>
+                        <span style={{wordBreak: 'break-all'}}>contactofabianramirez@gmail.com</span>
+                        <span className="copy-badge">{copiedKey === 'zcorreo' ? '✓' : 'Copiar'}</span>
+                      </p>
+                      <p className="copyable" onClick={() => copyText('Fabian Ramirez', 'ztitular')}>
+                        <span>Titular: Fabian Ramirez</span>
+                        <span className="copy-badge">{copiedKey === 'ztitular' ? '✓' : 'Copiar'}</span>
+                      </p>
+                    </div>
+
+                    <div className="bank-details" style={{marginTop: '1.2rem'}}>
+                      <h4>BINANCE (USDT)</h4>
+                      <p className="copyable" onClick={() => copyText('zbcaj33@gmail.com', 'binance')}>
+                        <span style={{wordBreak: 'break-all'}}>Pay: zbcaj33@gmail.com</span>
+                        <span className="copy-badge">{copiedKey === 'binance' ? '✓' : 'Copiar'}</span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -552,17 +585,26 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
             </form>
           </>
         ) : (
-          <div className="success-message" style={{textAlign: 'center', padding: '2rem 0'}}>
+          <div className="success-message" style={{textAlign: 'center', padding: '2.5rem 1rem', position: 'relative'}}>
+            <button 
+              type="button" 
+              className="modal-close-btn" 
+              onClick={onClose} 
+              aria-label="Cerrar modal"
+              style={{ position: 'absolute', top: '0.5rem', right: '0.5rem' }}
+            >
+              &times;
+            </button>
             <div className="check-animation">
               <svg className="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
                 <circle className="checkmark__circle" cx="26" cy="26" r="25" fill="none" />
                 <path className="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
               </svg>
             </div>
-            <h3 style={{marginTop: '1rem', color: '#E0FF00'}}>¡Pago Enviado!</h3>
-            <p style={{color: 'var(--text-secondary)', marginTop: '1rem'}}>Hemos recibido tu comprobante de pago.</p>
-            <p style={{fontSize: '0.9rem'}}>Una vez verificado, te enviaremos tus entradas al correo.</p>
-            <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem'}}>Cerrar</button>
+            <h3 style={{marginTop: '1.2rem', color: '#E0FF00', fontSize: '1.6rem'}}>¡Pago Enviado!</h3>
+            <p style={{color: 'var(--text-secondary)', marginTop: '0.8rem', fontSize: '1rem'}}>Hemos recibido tu comprobante de pago.</p>
+            <p style={{fontSize: '0.9rem', color: '#aaa', marginTop: '0.4rem'}}>Una vez verificado, te enviaremos tus entradas al correo.</p>
+            <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem', minWidth: '160px'}}>Cerrar</button>
           </div>
         )}
       </div>

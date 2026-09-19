@@ -628,16 +628,17 @@ h4 {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 2000;
     overflow-y: auto;
-    padding: 2rem 1rem;
+    padding: 2.5rem 1rem;
 }
 
 .modal.active {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     animation: fadeIn 0.3s ease;
 }
@@ -655,19 +656,60 @@ h4 {
 .modal-content {
     background: #111111;
     width: 100%;
-    max-width: 600px;
-    padding: 2.5rem;
-    border-radius: 12px;
+    max-width: 680px;
+    padding: 2.2rem 2.6rem;
+    border-radius: 14px;
     position: relative;
-    margin: auto;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
+    margin: 1.5rem auto;
+    border: 1px solid rgba(255, 255, 255, 0.09);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
 }
 
-@media (max-width: 600px) {
-    .modal-content {
-        padding: 1.5rem;
+@media (max-width: 640px) {
+    .modal {
+        padding: 1rem 0.5rem;
     }
+    .modal-content {
+        padding: 1.4rem 1.1rem;
+        margin: 0.6rem auto;
+        border-radius: 12px;
+    }
+}
+
+.modal-top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.2rem;
+    width: 100%;
+    margin-bottom: 1.8rem;
+    padding-bottom: 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.modal-close-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #a0a0a0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.modal-close-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
 }
 
 .close-modal {
@@ -688,16 +730,17 @@ h4 {
 .modal-main-title {
     font-family: var(--font-heading);
     font-weight: 900;
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
+    font-size: 1.65rem;
+    margin-bottom: 0.5rem;
     color: #FFFFFF;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
 .modal-subtitle {
     color: #A0A0A0;
-    margin-bottom: 2rem;
-    font-size: 0.95rem;
+    margin-bottom: 1.6rem;
+    font-size: 0.92rem;
     line-height: 1.5;
 }
 
@@ -708,12 +751,12 @@ h4 {
 .payment-info {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 1.5rem;
-    background: #1A1A1A;
-    padding: 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    border: none;
+    gap: 1.4rem;
+    background: #161616;
+    padding: 1.4rem;
+    border-radius: 10px;
+    margin-bottom: 1.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .bank-col {
@@ -723,9 +766,10 @@ h4 {
 
 .bank-details h4 {
     color: #FFFFFF;
-    margin-bottom: 0.8rem;
-    font-size: 1.1rem;
-    letter-spacing: 0px;
+    margin-bottom: 0.75rem;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
 }
 
 .bank-details p {
@@ -736,27 +780,40 @@ h4 {
 
 .copyable {
     cursor: pointer;
-    transition: var(--transition-fast);
+    transition: all 0.2s ease;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.3rem;
-    border-radius: 4px;
+    padding: 0.42rem 0.65rem;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    margin-bottom: 0.45rem;
+    font-size: 0.85rem;
 }
 
 .copyable:hover {
     color: var(--primary-neon);
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(224, 255, 0, 0.25);
 }
 
-.copyable i {
-    font-size: 0.8rem;
-    opacity: 0;
-    transition: var(--transition-fast);
+.copy-badge {
+    font-size: 0.72rem;
+    color: #888;
+    background: rgba(255, 255, 255, 0.06);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
 }
 
-.copyable:hover i {
-    opacity: 1;
+.copyable:hover .copy-badge {
+    color: #000;
+    background: var(--primary-neon);
+    font-weight: 700;
 }
 
 @media (max-width: 600px) {
@@ -950,10 +1007,8 @@ h4 {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 100%;
-    margin-bottom: 2rem;
-    padding-bottom: 1.2rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex: 1;
+    min-width: 0;
     user-select: none;
 }
 

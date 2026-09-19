@@ -458,17 +458,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
               {/* ================= PASO 1: PORTADA E INFORMACIÓN DEL EVENTO ================= */}
               <div style={{ display: currentStep === 1 ? 'block' : 'none' }}>
                 <div className="event-stage1-container">
-                  {/* Portada del evento */}
-                  {(event.image_url || event.image) && (
-                    <div className="event-cover-wrapper">
-                      <img 
-                        src={event.image_url || event.image} 
-                        alt={event.title || 'Portada del evento'} 
-                        className="event-cover-img" 
-                      />
-                    </div>
-                  )}
-
+                  {/* INFORMACIÓN DEL EVENTO ENCIMA DE LA PORTADA */}
                   <div className="event-info-header">
                     <h2 className="modal-main-title event-stage1-title">{event.title}</h2>
                     
@@ -496,6 +486,17 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                       )}
                     </div>
                   </div>
+
+                  {/* Portada del evento */}
+                  {(event.image_url || event.image) && (
+                    <div className="event-cover-wrapper">
+                      <img 
+                        src={event.image_url || event.image} 
+                        alt={event.title || 'Portada del evento'} 
+                        className="event-cover-img" 
+                      />
+                    </div>
+                  )}
 
                   {/* Lineup / Artistas si está configurado */}
                   {event.lineup && (

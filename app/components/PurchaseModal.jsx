@@ -73,6 +73,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   const [currentStep, setCurrentStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('pagomovil');
   const [selectedBank, setSelectedBank] = useState('');
+  const [customAlert, setCustomAlert] = useState(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [currentRateEUR, setCurrentRateEUR] = useState(0);
@@ -122,11 +123,19 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
 
   const handleContinueToPayment = () => {
     if (maxAvailableTickets <= 0) {
-      alert('Lo sentimos, no hay entradas disponibles para esta selección.');
+      setCustomAlert({
+        title: 'Entradas Agotadas',
+        message: 'Lo sentimos, las entradas seleccionadas ya no se encuentran disponibles.',
+        actionText: 'Entendido'
+      });
       return;
     }
     if (ticketCount <= 0 || ticketCount > maxAvailableTickets) {
-      alert(`Debes seleccionar entre 1 y ${maxAvailableTickets} entradas disponibles.`);
+      setCustomAlert({
+        title: 'Disponibilidad Limitada',
+        message: `Actualmente solo puedes seleccionar entre 1 y ${maxAvailableTickets} entrada(s).`,
+        actionText: 'Entendido'
+      });
       return;
     }
     setCurrentStep(2);
@@ -192,12 +201,20 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (maxAvailableTickets <= 0) {
-      alert('Lo sentimos, no hay entradas disponibles para esta selección.');
+      setCustomAlert({
+        title: 'Entradas Agotadas',
+        message: 'Lo sentimos, no hay entradas disponibles para esta selección.',
+        actionText: 'Entendido'
+      });
       return;
     }
 
     if (ticketCount > maxAvailableTickets) {
-      alert(`Solo puedes comprar un máximo de ${maxAvailableTickets} entrada(s) disponibles.`);
+      setCustomAlert({
+        title: 'Disponibilidad Limitada',
+        message: `Solo puedes comprar un máximo de ${maxAvailableTickets} entrada(s) disponibles.`,
+        actionText: 'Entendido'
+      });
       return;
     }
 
@@ -235,6 +252,19 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
       const result = await response.json();
       
       if (!response.ok || !result.success) {
+        if (result.isStockError) {
+          const avail = result.available;
+          setCustomAlert({
+            title: '¡Disponibilidad Actualizada!',
+            message: (result.error || 'Lo sentimos, otro cliente acaba de adquirir entradas.').replace(/^Error:\s*/i, ''),
+            actionText: (avail && avail > 0) ? `Ajustar a ${avail} entrada${avail > 1 ? 's' : ''} y continuar` : 'Ver otras entradas',
+            onAction: () => {
+              if (avail && avail > 0) setTicketCount(avail);
+              handleBackToStep1();
+            }
+          });
+          return;
+        }
         throw new Error(result.error || 'Error al procesar el pago');
       }
 
@@ -242,7 +272,12 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
       onPurchaseSuccess?.();
     } catch (error) {
       console.error(error);
-      alert('Error: ' + error.message);
+      const cleanMsg = (error.message || 'Error al procesar la solicitud').replace(/^Error:\s*/i, '');
+      setCustomAlert({
+        title: 'Aviso',
+        message: cleanMsg,
+        actionText: 'Entendido'
+      });
     } finally {
       setLoading(false);
     }
@@ -707,6 +742,42 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
             </div>
 
             <button className="btn-primary" onClick={onClose} style={{marginTop: '2rem', minWidth: '160px'}}>Cerrar</button>
+          </div>
+        )}
+
+        {/* Custom In-App Alert Overlay */}
+        {customAlert && (
+          <div className="alert-overlay">
+            <div className="alert-dialog-card">
+              <div className="alert-dialog-icon-wrapper">
+                ⚠️
+              </div>
+              <h3 className="alert-dialog-title">{customAlert.title || 'Aviso'}</h3>
+              <p className="alert-dialog-message">{customAlert.message}</p>
+              <div className="alert-dialog-actions">
+                <button
+                  type="button"
+                  className="btn-primary"
+                  onClick={() => {
+                    if (customAlert.onAction) {
+                      customAlert.onAction();
+                    }
+                    setCustomAlert(null);
+                  }}
+                >
+                  {customAlert.actionText || 'Aceptar'}
+                </button>
+                {customAlert.onAction && (
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setCustomAlert(null)}
+                  >
+                    Cerrar
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </div>

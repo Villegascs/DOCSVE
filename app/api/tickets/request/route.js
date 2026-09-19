@@ -62,10 +62,11 @@ export async function POST(req) {
             const availableTotal = Math.max(0, eventData.ticketLimit - totalSold);
             const err = new Error(
               availableTotal > 0
-                ? `Lo sentimos, otro cliente acaba de adquirir entradas. Solo quedan ${availableTotal} entrada(s) disponibles.`
+                ? `Lo sentimos, otro cliente acaba de adquirir entradas. Actualmente solo quedan ${availableTotal} entrada(s) disponibles.`
                 : 'Lo sentimos, las entradas para este evento acaban de agotarse.'
             );
             err.isStockError = true;
+            err.available = availableTotal;
             throw err;
           }
 
@@ -74,10 +75,11 @@ export async function POST(req) {
             const availableForType = Math.max(0, ticketTypeConfig.limit - soldForType);
             const err = new Error(
               availableForType > 0
-                ? `Lo sentimos, otro cliente acaba de adquirir entradas de "${ticketTypeName}". Solo quedan ${availableForType} disponibles.`
+                ? `Lo sentimos, otro cliente acaba de adquirir entradas de "${ticketTypeName}". Actualmente solo quedan ${availableForType} disponibles.`
                 : `Lo sentimos, la entrada "${ticketTypeName}" se acaba de agotar.`
             );
             err.isStockError = true;
+            err.available = availableForType;
             throw err;
           }
 
@@ -105,7 +107,11 @@ export async function POST(req) {
       });
     } catch (txError) {
       if (txError.isStockError) {
-        return NextResponse.json({ error: txError.message }, { status: 400 });
+        return NextResponse.json({ 
+          error: txError.message,
+          isStockError: true,
+          available: txError.available !== undefined ? txError.available : null
+        }, { status: 400 });
       }
       throw txError;
     }

@@ -13,7 +13,11 @@ export default function AdminScanner() {
       const res = await fetch('/api/scanner', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ uuid })
+        body: JSON.stringify({ 
+          uuid,
+          scannerKey: 'ADMIN_MASTER',
+          scannerName: 'Administrador'
+        })
       });
       const data = await res.json();
       setScanResult(data);

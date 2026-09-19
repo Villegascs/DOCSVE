@@ -131,7 +131,7 @@ export async function POST(req) {
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {
       const drinkPacksText = drinkPacks ? `\n🍾 <b>Combos</b>: ${escapeTgHtml(drinkPacks)}` : '';
-      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n🎪 <b>Evento</b>: ${escapeTgHtml(recordedEventTitle)}\n👤 <b>Nombre</b>: ${escapeTgHtml(name)}\n📧 <b>Email</b>: ${escapeTgHtml(email)}\n🆔 <b>Cédula</b>: ${escapeTgHtml(cedula)}\n📱 <b>Teléfono</b>: ${escapeTgHtml(phone)}\n🎟 <b>Entradas</b>: ${ticketCount}x ${escapeTgHtml(ticketTypeName)}${drinkPacksText}\n💰 <b>Total Bs</b>: ${escapeTgHtml(totalBs)}\n🏦 <b>Banco</b>: ${escapeTgHtml(bank)} (Ref: ${escapeTgHtml(ref)})`;
+      const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n🎪 <b>Evento</b>: ${escapeTgHtml(recordedEventTitle)}\n👤 <b>Nombre</b>: ${escapeTgHtml(name)}\n📧 <b>Email</b>: ${escapeTgHtml(email)}\n🆔 <b>Cédula</b>: ${escapeTgHtml(cedula)}\n📱 <b>Teléfono</b>: ${escapeTgHtml(phone)}\n🎟 <b>Entradas</b>: ${ticketCount}x ${escapeTgHtml(ticketTypeName)}${drinkPacksText}\n💰 <b>Total</b>: €${escapeTgHtml(totalEur)} • Bs. ${escapeTgHtml(totalBs)}\n🏦 <b>Método/Banco</b>: ${escapeTgHtml(bank)} (Ref: ${escapeTgHtml(ref)})`;
 
       for (const chatId of adminChatIds) {
         try {

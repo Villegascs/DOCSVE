@@ -63,6 +63,30 @@ export async function POST(req) {
         await handleExport(id, chatId, callbackQueryId, 'tickets');
       } else if (action === 'expScan') {
         await handleExport(id, chatId, callbackQueryId, 'scanned');
+      } else if (action === 'setMain') {
+        try {
+          const batch = db.batch();
+          const allEvents = await db.collection('events').get();
+          allEvents.forEach(doc => {
+            batch.update(doc.ref, { isMainEvent: doc.id === id });
+          });
+          await batch.commit();
+
+          const evDoc = await db.collection('events').doc(id).get();
+          const evData = evDoc.data() || {};
+          const evTitle = evData.title || 'Evento';
+
+          if (callbackQueryId) {
+            answerTgCallbackQuery(callbackQueryId, { text: `✓ Asignado a GET TICKETS: ${evTitle}` }).catch(() => {});
+          }
+
+          await sendTgMessage(chatId, `⚡️ <b>ACTUALIZADO CON ÉXITO</b>\n\nEl botón <b>GET TICKETS</b> en la web ahora abre directamente las entradas para:\n🎪 <b>${evTitle}</b>\n📅 ${evData.date || 'Sin fecha'}\n📍 ${evData.location || 'Sin locación'}`, { parse_mode: 'HTML' });
+        } catch (err) {
+          console.error("Error asignando evento principal en Telegram:", err);
+          if (callbackQueryId) {
+            answerTgCallbackQuery(callbackQueryId, { text: "⚠️ Error asignando evento." }).catch(() => {});
+          }
+        }
       }
     } else if (body.message && body.message.text && token) {
       const chatId = body.message.chat.id.toString();
@@ -71,9 +95,107 @@ export async function POST(req) {
       // Restrict commands to admin chat IDs (or group where bot is)
       if (adminChats.includes(chatId)) {
         const text = body.message.text.trim();
+        const cmd = text.toLowerCase().split('@')[0];
 
-        if (text === '/ventas' || text === '/escaneadas') {
-          const action = text === '/ventas' ? 'expVentas' : 'expScan';
+        if (cmd === '/start' || cmd === '/help' || cmd === '/menu') {
+          const helpMsg = `🎛 <b>PANEL DE CONTROL TELEGRAM • DOCS</b>
+
+Comandos disponibles:
+📊 <b>/resumen</b> - Ver estado de ventas en vivo, recaudación y pagos pendientes.
+🎪 <b>/eventos</b> - Lista de eventos, lineup y cuál tiene activo el botón GET TICKETS.
+⚡️ <b>/settickets</b> - Cambiar qué evento abre el botón GET TICKETS en la web.
+📈 <b>/ventas</b> - Exportar reporte de ventas en Excel / CSV.
+🎟 <b>/escaneadas</b> - Exportar reporte de tickets escaneados en puerta.`;
+
+          await sendTgMessage(chatId, helpMsg, { parse_mode: 'HTML' });
+        } else if (cmd === '/resumen') {
+          try {
+            const [eventsSnap, ticketsSnap] = await Promise.all([
+              db.collection('events').get(),
+              db.collection('tickets').get()
+            ]);
+
+            const mainEventDoc = eventsSnap.docs.find(d => d.data()?.isMainEvent === true) || eventsSnap.docs[0];
+            const mainEvent = mainEventDoc ? mainEventDoc.data() : null;
+
+            let totalApproved = 0;
+            let totalPending = 0;
+            let totalEur = 0;
+            let totalBs = 0;
+
+            ticketsSnap.forEach(doc => {
+              const t = doc.data() || {};
+              if (t.status === 'approved') {
+                totalApproved += (parseInt(t.ticket_count, 10) || 1);
+                totalEur += (parseFloat(t.total_eur) || 0);
+                totalBs += (parseFloat(t.total_bs) || 0);
+              } else if (t.status === 'pending') {
+                totalPending += 1;
+              }
+            });
+
+            const resumenMsg = `📊 <b>RESUMEN EN VIVO • DOCS</b>
+
+🎪 <b>Evento Principal (GET TICKETS):</b>
+${mainEvent ? `<b>${mainEvent.title}</b>\n📅 ${mainEvent.date || 'S/F'}\n📍 ${mainEvent.location || 'S/L'}\n🎟 Límite: ${mainEvent.ticketLimit || 'Ilimitado'}` : 'Sin evento asignado'}
+
+━━━━━━━━━━━━━━━━━━━━
+🎟 <b>Entradas Aprobadas:</b> ${totalApproved}
+⏳ <b>Pagos por Revisar:</b> ${totalPending}
+💰 <b>Recaudación Total:</b>
+• EUR: <b>€${totalEur.toFixed(2)}</b>
+• Bs: <b>Bs. ${totalBs.toLocaleString('es-VE', { minimumFractionDigits: 2 })}</b>
+━━━━━━━━━━━━━━━━━━━━`;
+
+            await sendTgMessage(chatId, resumenMsg, { parse_mode: 'HTML' });
+          } catch (err) {
+            console.error("Error en resumen:", err);
+            await sendTgMessage(chatId, `⚠️ Error obteniendo resumen: ${err.message}`);
+          }
+        } else if (cmd === '/eventos' || cmd === '/evento') {
+          try {
+            const eventsSnap = await db.collection('events').get();
+            let msg = `🎪 <b>EVENTOS REGISTRADOS EN DOCS</b>\n\n`;
+            const buttons = [];
+
+            eventsSnap.forEach(doc => {
+              const ev = doc.data() || {};
+              const isMain = ev.isMainEvent ? '★ [GET TICKETS ACTIVO]' : '';
+              msg += `• <b>${ev.title}</b> ${isMain}\n📅 ${ev.date || 'S/F'} | 📍 ${ev.location || 'S/L'}\n${ev.lineup ? `🎵 Lineup:\n${ev.lineup}\n` : ''}\n`;
+              if (!ev.isMainEvent) {
+                buttons.push([{ text: `★ Asignar GET TICKETS: ${ev.title.substring(0, 24)}`, callback_data: `setMain_${doc.id}` }]);
+              }
+            });
+
+            await sendTgMessage(chatId, msg, {
+              parse_mode: 'HTML',
+              reply_markup: buttons.length > 0 ? { inline_keyboard: buttons } : undefined
+            });
+          } catch (err) {
+            console.error("Error en eventos:", err);
+            await sendTgMessage(chatId, `⚠️ Error al consultar eventos: ${err.message}`);
+          }
+        } else if (cmd === '/settickets') {
+          try {
+            const eventsSnap = await db.collection('events').get();
+            const buttons = [];
+
+            eventsSnap.forEach(doc => {
+              const ev = doc.data() || {};
+              const badge = ev.isMainEvent ? ' ★ (ACTUAL)' : '';
+              buttons.push([{ text: `${ev.title}${badge}`, callback_data: `setMain_${doc.id}` }]);
+            });
+
+            await sendTgMessage(chatId, `⚡️ <b>Selecciona qué evento debe abrir el botón GET TICKETS en la web:</b>`, {
+              parse_mode: 'HTML',
+              reply_markup: { inline_keyboard: buttons }
+            });
+          } catch (err) {
+            console.error("Error en settickets:", err);
+            await sendTgMessage(chatId, `⚠️ Error: ${err.message}`);
+          }
+        } else if (cmd === '/ventas' || cmd === '/escaneadas') {
+          const action = cmd === '/ventas' ? 'expVentas' : 'expScan';
           try {
             const eventsSnap = await db.collection('events').get();
 
@@ -86,7 +208,7 @@ export async function POST(req) {
               buttons.push([{ text: `🎪 ${title}`, callback_data: `${action}_${doc.id}` }]);
             });
 
-            await sendTgMessage(chatId, `¿De qué evento deseas exportar ${text === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
+            await sendTgMessage(chatId, `¿De qué evento deseas exportar ${cmd === '/ventas' ? 'las ventas' : 'las escaneadas'}?`, {
               reply_markup: { inline_keyboard: buttons }
             });
           } catch (err) {
@@ -213,18 +335,25 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       `;
     }
 
-    // Fetch event title safely (use row.event_title or live title from events collection)
+    // Fetch event details safely (use row.event_title or live title from events collection)
     let eventTitle = row.event_title || "DOCS";
+    let eventDate = "";
+    let eventLocation = "";
     if (row.event_id) {
       try {
         const evDoc = await db.collection('events').doc(row.event_id).get();
-        if (evDoc.exists && evDoc.data()?.title) {
-          eventTitle = evDoc.data().title;
+        if (evDoc.exists) {
+          const evData = evDoc.data() || {};
+          if (evData.title) eventTitle = evData.title;
+          if (evData.date) eventDate = evData.date;
+          if (evData.location) eventLocation = evData.location;
         }
       } catch (err) {
         console.error("Error fetching event title for email:", err);
       }
     }
+
+    const totalEurText = row.total_eur ? `€${parseFloat(row.total_eur).toFixed(2)} • ` : '';
 
     const mailOptions = {
       from: `"DOCS" <${process.env.EMAIL_USER}>`,
@@ -236,7 +365,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
         'X-MSMail-Priority': 'High',
         'Importance': 'High'
       },
-      text: `Hola ${row.name},\n\n¡Tu pago de Bs. ${row.total_bs} para ${eventTitle} ha sido confirmado con éxito!\n\nDetalle de tu orden:\n- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDOCS | Eventos y Entretenimiento`,
+      text: `Hola ${row.name},\n\n¡Tu pago de ${totalEurText}Bs. ${row.total_bs} para ${eventTitle} ha sido confirmado con éxito!\n\nDetalle de tu orden:\n- Evento: ${eventTitle}\n${eventDate ? `- Fecha: ${eventDate}\n` : ''}${eventLocation ? `- Locación: ${eventLocation}\n` : ''}- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: ${totalEurText}Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDOCS | Eventos y Entretenimiento`,
       html: `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -273,7 +402,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
               </div>
               <h2 style="margin: 0 0 10px 0; font-size: 22px; color: #ffffff;">¡Hola ${row.name}!</h2>
               <p style="margin: 0; font-size: 15px; color: #cccccc; line-height: 1.6;">
-                Tu pago de <strong>Bs. ${row.total_bs}</strong> para <strong>${eventTitle}</strong> ha sido confirmado. A continuación encontrarás tus códigos QR oficiales de acceso.
+                Tu pago para <strong>${eventTitle}</strong> ha sido confirmado. A continuación encontrarás tus códigos QR oficiales de acceso.
               </p>
             </td>
           </tr>
@@ -282,6 +411,20 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
           <tr>
             <td style="padding: 15px 30px;">
               <table role="presentation" width="100%" cellspacing="0" cellpadding="10" border="0" style="background-color: #1c1c1c; border-radius: 8px; border: 1px solid #2e2e2e; font-size: 14px;">
+                <tr>
+                  <td style="color: #888888; border-bottom: 1px solid #282828;">Evento:</td>
+                  <td style="color: #ffffff; font-weight: 600; text-align: right; border-bottom: 1px solid #282828;">${eventTitle}</td>
+                </tr>
+                ${eventDate ? `
+                <tr>
+                  <td style="color: #888888; border-bottom: 1px solid #282828;">Fecha:</td>
+                  <td style="color: #ffffff; font-weight: 600; text-align: right; border-bottom: 1px solid #282828;">${eventDate}</td>
+                </tr>` : ''}
+                ${eventLocation ? `
+                <tr>
+                  <td style="color: #888888; border-bottom: 1px solid #282828;">Locación:</td>
+                  <td style="color: #ffffff; font-weight: 600; text-align: right; border-bottom: 1px solid #282828;">${eventLocation}</td>
+                </tr>` : ''}
                 <tr>
                   <td style="color: #888888; border-bottom: 1px solid #282828;">Titular:</td>
                   <td style="color: #ffffff; font-weight: 600; text-align: right; border-bottom: 1px solid #282828;">${row.name} (CI: ${row.cedula || 'N/A'})</td>
@@ -297,7 +440,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
                 </tr>` : ''}
                 <tr>
                   <td style="color: #888888;">Total Pagado:</td>
-                  <td style="color: #E0FF00; font-weight: bold; text-align: right; font-size: 16px;">Bs. ${row.total_bs}</td>
+                  <td style="color: #E0FF00; font-weight: bold; text-align: right; font-size: 16px;">${totalEurText}Bs. ${row.total_bs}</td>
                 </tr>
               </table>
             </td>

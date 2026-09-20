@@ -25,13 +25,13 @@ export default function Footer() {
               aria-label="Creativos Criollos"
               title="Creativos Criollos"
               style={{ display: 'inline-flex', alignItems: 'center', transition: 'transform 0.2s, opacity 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.08)'; e.currentTarget.style.opacity = '1'; }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; e.currentTarget.style.opacity = '1'; }}
               onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '0.9'; }}
             >
               <img 
-                src="/Logos/logo-cc-right.png" 
+                src="/Logos/sponsors/creativos-criollos.png" 
                 alt="Creativos Criollos" 
-                style={{ height: '36px', width: 'auto', opacity: 0.9 }} 
+                style={{ height: '30px', width: 'auto', opacity: 0.9, filter: 'drop-shadow(0px 0px 6px rgba(255, 255, 255, 0.2))' }} 
               />
             </a>
           </div>

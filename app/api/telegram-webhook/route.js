@@ -8,6 +8,7 @@ import QRCode from 'qrcode';
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { convertTicketsToCSV, convertScannedToCSV } from '@/lib/csvUtils';
+import { docsLogoBase64 } from '@/lib/docsLogoBase64';
 const token = process.env.TELEGRAM_BOT_TOKEN;
 
 async function sendTgMessage(chatId, text, options = {}) {
@@ -289,6 +290,16 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const ticketCount = Math.max(1, parseInt(row.ticket_count, 10) || 1);
     const drinkPacksList = row.drink_packs ? row.drink_packs.split(',').map(s => s.trim()).filter(Boolean) : [];
     const attachments = [];
+
+    if (docsLogoBase64) {
+      attachments.push({
+        filename: 'logo-docs.png',
+        content: Buffer.from(docsLogoBase64, 'base64'),
+        cid: 'docs_logo',
+        contentType: 'image/png'
+      });
+    }
+
     let qrHtml = '';
     let couponHtml = '';
 
@@ -418,11 +429,20 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
           
           <!-- Encabezado -->
           <tr>
-            <td style="padding: 30px 30px 20px 30px; text-align: center; background-color: #181818; border-bottom: 2px solid #ffffff;">
-              <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 3px; color: #ffffff; text-transform: uppercase;">
-                DÖCS
-              </h1>
-              <p style="margin: 6px 0 0 0; font-size: 14px; color: #aaaaaa;">Confirmación de Entradas</p>
+            <td style="padding: 28px 30px 22px 30px; text-align: center; background-color: #181818; border-bottom: 2px solid #ffffff;">
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 0 auto; text-align: center;">
+                <tr>
+                  <td align="center">
+                    <img 
+                      src="cid:docs_logo" 
+                      alt="DÖCS" 
+                      width="135" 
+                      style="display: block; margin: 0 auto; max-width: 140px; width: 135px; height: auto; border: 0; outline: none; text-decoration: none; color: #ffffff; font-size: 26px; font-weight: 900; letter-spacing: 3px;" 
+                    />
+                  </td>
+                </tr>
+              </table>
+              <p style="margin: 10px 0 0 0; font-size: 13px; color: #aaaaaa; letter-spacing: 1px; text-transform: uppercase;">Confirmación de Entradas</p>
             </td>
           </tr>
 

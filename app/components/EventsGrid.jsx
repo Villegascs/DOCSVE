@@ -36,25 +36,41 @@ const DEFAULT_MAIN_EVENT = {
 export default function EventsGrid({ initialEvents = null, initialVideoData = null }) {
   const [modalOpen, setModalOpen] = useState(false);
   
-  const startingEvents = Array.isArray(initialEvents) && initialEvents.length > 0 
-    ? initialEvents 
-    : [DEFAULT_MAIN_EVENT];
-    
-  const [events, setEvents] = useState(startingEvents);
+  const [events, setEvents] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('docs_events_cache');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (_) {}
+    }
+    return [DEFAULT_MAIN_EVENT];
+  });
   
-  const initialMain = startingEvents.find(e => e.isMainEvent && e.status === 'active') ||
-                      startingEvents.find(e => e.isMainEvent) ||
-                      startingEvents[0];
+  const initialMain = events.find(e => e.isMainEvent && e.status === 'active') ||
+                      events.find(e => e.isMainEvent) ||
+                      events[0] ||
+                      DEFAULT_MAIN_EVENT;
                       
   const [selectedEvent, setSelectedEvent] = useState(initialMain);
   const [loading, setLoading] = useState(false);
 
-  // Video Section Info: usa inmediatamente los datos entregados por SSR (cero destellos de datos viejos)
-  const [videoData, setVideoData] = useState(initialVideoData || {
-    title: "",
-    subtitle: "",
-    description: "",
-    youtubeUrl: ""
+  // Video Section Info: recupera al instante lo guardado por el usuario (sin textos obsoletos)
+  const [videoData, setVideoData] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('docs_video_cache');
+        if (cached) return JSON.parse(cached);
+      } catch (_) {}
+    }
+    return {
+      title: "",
+      subtitle: "",
+      description: "",
+      youtubeUrl: ""
+    };
   });
 
   const fetchEvents = async () => {
@@ -63,6 +79,9 @@ export default function EventsGrid({ initialEvents = null, initialVideoData = nu
       const data = await res.json();
       if (data.success && Array.isArray(data.events) && data.events.length > 0) {
         setEvents(data.events);
+        try {
+          localStorage.setItem('docs_events_cache', JSON.stringify(data.events));
+        } catch (_) {}
       }
     } catch (error) {
       console.warn('Error fetching events, keeping current state:', error);
@@ -77,6 +96,9 @@ export default function EventsGrid({ initialEvents = null, initialVideoData = nu
       const data = await res.json();
       if (data.success && data.data) {
         setVideoData(data.data);
+        try {
+          localStorage.setItem('docs_video_cache', JSON.stringify(data.data));
+        } catch (_) {}
       }
     } catch (e) {
       console.error('Error fetching video section info:', e);

@@ -3,13 +3,15 @@
 const SPONSORS = [
   { name: 'Villegas', src: '/Logos/sponsors/logo-villegas.png', alt: 'Villegas' },
   { name: 'Creativos Criollos', src: '/Logos/sponsors/creativos-criollos.png', alt: 'Creativos Criollos' },
+  { name: 'Jardín', src: '/Logos/sponsors/logo-jardin.png', alt: 'Jardín' },
+  { name: 'Velada', src: '/Logos/sponsors/logo-velada.png', alt: 'Velada' },
   { name: 'Xtreme Audiovisuales', src: '/Logos/sponsors/xtreme-audiovisuales.png', alt: 'Xtreme Audiovisuales' },
   { name: 'Luna Candles', src: '/Logos/sponsors/luna-candles.png', alt: 'Luna Candles' }
 ];
 
 export default function SponsorsTicker() {
-  // Repetir el array para garantizar un desplazamiento infinito continuo y fluido
-  const repeatedSponsors = [...SPONSORS, ...SPONSORS, ...SPONSORS, ...SPONSORS];
+  // Repetir el array para garantizar un desplazamiento continuo, infinito y sin cortes
+  const repeatedSponsors = [...SPONSORS, ...SPONSORS, ...SPONSORS];
 
   return (
     <section className="sponsors-ticker-wrapper" aria-label="Sponsors y Aliados">

@@ -311,14 +311,21 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      attachments.push({ filename: `entrada-docs-${i + 1}.png`, content: qrBuffer, cid: `qrcode_image_${i}` });
+      attachments.push({
+        filename: `entrada-docs-${i + 1}.png`,
+        content: qrBuffer,
+        cid: `qrcode_image_${i}`,
+        contentType: 'image/png'
+      });
 
       qrHtml += `
-      <div style="margin: 20px auto; max-width: 400px; background: #111; padding: 20px; border-radius: 15px; border: 1px solid #333;">
-        <h3 style="color:#ccc; margin-top: 0;">Entrada ${i + 1} de ${ticketCount}</h3>
-        <p style="color:#fff; font-size: 18px;"><strong>Titular:</strong> ${row.name}</p>
-        <img src="cid:qrcode_image_${i}" style="margin:10px 0;border-radius:10px;width:100%;max-width:300px;">
-        <p style="color:#A0A0A0; font-size: 12px;">ID: ${shortId}</p>
+      <div style="margin: 20px auto; max-width: 360px; background: #18181b; padding: 20px; border-radius: 12px; border: 1px solid #27272a; text-align: center;">
+        <p style="color: #a1a1aa; font-size: 13px; margin: 0 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">Entrada ${i + 1} de ${ticketCount}</p>
+        <p style="color: #ffffff; font-size: 17px; font-weight: bold; margin: 0 0 15px 0;">${row.name}</p>
+        <div style="background: #ffffff; padding: 12px; border-radius: 10px; display: inline-block;">
+          <img src="cid:qrcode_image_${i}" alt="Código QR Entrada ${i + 1}" style="width: 220px; height: 220px; display: block; border-radius: 4px;" />
+        </div>
+        <p style="color: #71717a; font-size: 12px; margin: 12px 0 0 0; font-family: monospace;">ID: ${shortId}</p>
       </div>`;
     }
 
@@ -344,21 +351,20 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       });
       const qrBuffer = Buffer.from(qrDataUrl.split(',')[1], 'base64');
 
-      attachments.push({ filename: `cupon-${i + 1}.png`, content: qrBuffer, cid: `coupon_image_${i}` });
+      attachments.push({
+        filename: `cupon-bebida-${i + 1}.png`,
+        content: qrBuffer,
+        cid: `coupon_image_${i}`,
+        contentType: 'image/png'
+      });
 
       couponHtml += `
-      <div style="margin: 30px auto; max-width: 400px; display: table; width: 100%; background-color: #ef4444; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
-        <div style="display: table-cell; width: 65%; background: #ef4444; padding: 15px; text-align: center; vertical-align: middle;">
-          <div style="background: white; padding: 10px; border-radius: 8px; display: inline-block;">
-            <img src="cid:coupon_image_${i}" style="width: 100%; max-width: 200px; display: block;">
-          </div>
+      <div style="margin: 20px auto; max-width: 360px; background: #18181b; padding: 16px; border-radius: 12px; border: 1px solid #3f3f46; text-align: center;">
+        <p style="color: #ef4444; font-size: 14px; font-weight: bold; margin: 0 0 10px 0; text-transform: uppercase;">Cupón: ${packName}</p>
+        <div style="background: #ffffff; padding: 10px; border-radius: 8px; display: inline-block;">
+          <img src="cid:coupon_image_${i}" alt="Cupón de Barra ${packName}" style="width: 180px; height: 180px; display: block; border-radius: 4px;" />
         </div>
-        <div style="display: table-cell; width: 35%; background: white; padding: 15px; text-align: center; vertical-align: middle; border-left: 2px dashed #ef4444;">
-          <h2 style="color: #ef4444; margin: 0; font-size: 24px; font-weight: bold; text-transform: uppercase; word-break: break-word;">
-            ${packName}
-          </h2>
-          <p style="color: #666; font-size: 10px; margin-top: 10px;">CUPÓN<br>VÁLIDO</p>
-        </div>
+        <p style="color: #71717a; font-size: 11px; margin: 8px 0 0 0; font-family: monospace;">ID: ${shortCouponId}</p>
       </div>
       `;
     }
@@ -384,16 +390,14 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
     const totalEurText = row.total_eur ? `€${parseFloat(row.total_eur).toFixed(2)} • ` : '';
 
     const mailOptions = {
-      from: `"DOCS" <${process.env.EMAIL_USER}>`,
+      from: `"DÖCS Eventos" <${process.env.EMAIL_USER}>`,
       replyTo: process.env.EMAIL_USER,
       to: row.email,
-      subject: `🎟️ Tus Entradas confirmadas para ${eventTitle} - ${row.name}`,
+      subject: `Tus entradas para ${eventTitle} - ${row.name}`,
       headers: {
-        'X-Priority': '1',
-        'X-MSMail-Priority': 'High',
-        'Importance': 'High'
+        'X-Entity-Ref-ID': `docs-${id}-${Date.now()}`
       },
-      text: `Hola ${row.name},\n\n¡Tu pago de ${totalEurText}Bs. ${row.total_bs} para ${eventTitle} ha sido confirmado con éxito!\n\nDetalle de tu orden:\n- Evento: ${eventTitle}\n${eventDate ? `- Fecha: ${eventDate}\n` : ''}${eventLocation ? `- Locación: ${eventLocation}\n` : ''}- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: ${totalEurText}Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDOCS | Eventos y Entretenimiento`,
+      text: `Hola ${row.name},\n\n¡Tu compra para ${eventTitle} ha sido confirmada con éxito!\n\nDetalle de tu orden:\n- Evento: ${eventTitle}\n${eventDate ? `- Fecha: ${eventDate}\n` : ''}${eventLocation ? `- Locación: ${eventLocation}\n` : ''}- Titular: ${row.name}\n- Cédula: ${row.cedula || 'N/A'}\n- Cantidad: ${ticketCount} entrada(s)\n- Tipo: ${row.ticket_type || 'General'}\n${drinkPacksList.length > 0 ? `- Combos de Bebida: ${drinkPacksList.join(', ')}\n` : ''}- Total pagado: ${totalEurText}Bs. ${row.total_bs}\n\nTus códigos QR oficiales vienen adjuntos en este correo electrónico.\n\nIMPORTANTE:\n- Cada código QR es único y válido para 1 persona (será escaneado en el acceso al evento).\n- Si no puedes visualizar las imágenes, por favor presiona "Mostrar imágenes" en tu aplicación de correo.\n- Te recomendamos guardar este correo o tomar captura a tus códigos QR.\n\n¿Tienes alguna pregunta? Puedes responder directamente a este correo.\n\nDÖCS Eventos • Caracas y Mérida, Venezuela`,
       html: `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -402,9 +406,9 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
   <title>Tus Entradas para ${eventTitle}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #0c0c0c; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #ffffff;">
-  <!-- Preheader oculto para vista previa en bandeja de entrada -->
-  <div style="display: none; max-height: 0px; overflow: hidden; font-size: 1px; line-height: 1px; color: #0c0c0c;">
-    ¡Pago confirmado! Aquí tienes tus entradas oficiales y códigos QR para ${eventTitle}.
+  <!-- Vista previa de bandeja de entrada -->
+  <div style="display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    Entradas oficiales y códigos de acceso para ${eventTitle}.
   </div>
 
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #0c0c0c; padding: 30px 10px;">
@@ -412,25 +416,25 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
       <td align="center">
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width: 580px; background-color: #141414; border-radius: 12px; border: 1px solid #282828; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
           
-          <!-- Encabezado con Marca -->
+          <!-- Encabezado -->
           <tr>
             <td style="padding: 30px 30px 20px 30px; text-align: center; background-color: #181818; border-bottom: 2px solid #ffffff;">
               <h1 style="margin: 0; font-size: 28px; font-weight: 900; letter-spacing: 3px; color: #ffffff; text-transform: uppercase;">
-                DOCS
+                DÖCS
               </h1>
-              <p style="margin: 6px 0 0 0; font-size: 14px; color: #aaaaaa;">Confirmación Oficial de Entradas</p>
+              <p style="margin: 6px 0 0 0; font-size: 14px; color: #aaaaaa;">Confirmación de Entradas</p>
             </td>
           </tr>
 
           <!-- Mensaje Principal -->
           <tr>
             <td style="padding: 30px 30px 10px 30px; text-align: center;">
-              <div style="display: inline-block; background: rgba(224, 255, 0, 0.1); border: 1px solid rgba(224, 255, 0, 0.3); border-radius: 50px; padding: 6px 18px; margin-bottom: 15px;">
-                <span style="color: #E0FF00; font-weight: bold; font-size: 13px;">✓ PAGO VERIFICADO CON ÉXITO</span>
+              <div style="display: inline-block; background: rgba(34, 197, 94, 0.12); border: 1px solid rgba(34, 197, 94, 0.4); border-radius: 50px; padding: 6px 18px; margin-bottom: 15px;">
+                <span style="color: #22c55e; font-weight: bold; font-size: 13px;">✓ PAGO CONFIRMADO</span>
               </div>
               <h2 style="margin: 0 0 10px 0; font-size: 22px; color: #ffffff;">¡Hola ${row.name}!</h2>
               <p style="margin: 0; font-size: 15px; color: #cccccc; line-height: 1.6;">
-                Tu pago para <strong>${eventTitle}</strong> ha sido confirmado. A continuación encontrarás tus códigos QR oficiales de acceso.
+                Tu compra para <strong>${eventTitle}</strong> ha sido procesada con éxito. A continuación encontrarás tus códigos QR oficiales para el ingreso al evento.
               </p>
             </td>
           </tr>
@@ -468,7 +472,7 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
                 </tr>` : ''}
                 <tr>
                   <td style="color: #888888;">Total Pagado:</td>
-                  <td style="color: #E0FF00; font-weight: bold; text-align: right; font-size: 16px;">${totalEurText}Bs. ${row.total_bs}</td>
+                  <td style="color: #22c55e; font-weight: bold; text-align: right; font-size: 16px;">${totalEurText}Bs. ${row.total_bs}</td>
                 </tr>
               </table>
             </td>
@@ -485,17 +489,17 @@ async function handleApprove(id, chatId, messageId, caption, callbackQueryId) {
             </td>
           </tr>
 
-          <!-- Consejos de Entrega y Anti-Spam Footer -->
+          <!-- Footer Oficial Anti-Spam -->
           <tr>
-            <td style="padding: 25px 30px; background-color: #0e0e0e; border-top: 1px solid #222222; text-align: center;">
+            <td style="padding: 24px 30px; background-color: #0e0e0e; border-top: 1px solid #222222; text-align: center;">
               <p style="margin: 0 0 10px 0; font-size: 12px; color: #888888; line-height: 1.5;">
-                ¿No puedes ver las imágenes? Haz clic en <strong>"Mostrar imágenes"</strong> o <strong>"Permitir siempre imágenes de este remitente"</strong>.
+                ¿No visualizas el código QR? Selecciona <strong>"Mostrar imágenes"</strong> o <strong>"Confiar en este remitente"</strong> en tu aplicación de correo.
               </p>
-              <p style="margin: 0 0 10px 0; font-size: 12px; color: #666666; line-height: 1.5;">
-                Recibes este correo porque completaste un pedido en DOCS. Si tienes preguntas o necesitas soporte, responde directamente a este mensaje.
+              <p style="margin: 0 0 8px 0; font-size: 11px; color: #71717a; line-height: 1.5;">
+                DÖCS Eventos • Caracas y Mérida, Venezuela • docsevents.com
               </p>
-              <p style="margin: 0; font-size: 11px; color: #444444;">
-                © ${new Date().getFullYear()} DOCS. Todos los derechos reservados.
+              <p style="margin: 0; font-size: 11px; color: #52525b;">
+                © ${new Date().getFullYear()} DÖCS Eventos. Todos los derechos reservados.
               </p>
             </td>
           </tr>

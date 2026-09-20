@@ -90,16 +90,6 @@ export default function Navbar() {
         
         {/* MENÚ DE NAVEGACIÓN CENTRAL / DRAWER MÓVIL */}
         <div className={`nav-links nav-directional-element ${menuOpen ? 'mobile-open' : ''}`}>
-          {/* Botón de cierre visible en móvil */}
-          <button 
-            type="button" 
-            className="mobile-close-btn" 
-            onClick={() => setMenuOpen(false)}
-            aria-label="Cerrar menú"
-          >
-            ✕
-          </button>
-
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>EVENTOS</Link>
           <Link href="#tienda" className="nav-link" onClick={() => setMenuOpen(false)}>TIENDA</Link>
           <Link href="#eventos" className="nav-link" onClick={() => setMenuOpen(false)}>ARTISTS</Link>

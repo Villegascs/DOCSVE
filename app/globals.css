@@ -314,37 +314,9 @@ h4 {
     transform: translateY(-8px) rotate(-45deg);
 }
 
-.mobile-close-btn {
-    display: none;
-}
-
 @media (max-width: 960px) {
     .nav-container {
         padding: 0 1.5rem;
-    }
-
-    .mobile-close-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: absolute;
-        top: 1.5rem;
-        right: 1.5rem;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        color: #ffffff;
-        font-size: 1.35rem;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        cursor: pointer;
-        z-index: 1005;
-        transition: background 0.2s ease, transform 0.2s ease;
-    }
-
-    .mobile-close-btn:active {
-        transform: scale(0.92);
-        background: rgba(255, 255, 255, 0.25);
     }
 
     .nav-links {

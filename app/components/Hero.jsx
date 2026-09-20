@@ -6,17 +6,29 @@ export default async function Hero() {
 
   return (
     <header id="inicio" className="hero">
-      {/* VIDEO DE FONDO CON EL WILD BLOOM ANIMADO */}
+      {/* VIDEO DE FONDO PARA LAPTOPS / PCS / DISPOSITIVOS WEB */}
       <video
         autoPlay
         loop
         muted
         playsInline
         preload="auto"
-        className="hero-video"
+        className="hero-video hero-video-desktop"
       >
         <source src="/Multimedia/video-fondo-wildbloom.mp4?v=2" type="video/mp4" />
         <source src="/Multimedia/VIDEO%20FONDO%20WILDBLOOM.mp4?v=2" type="video/mp4" />
+      </video>
+
+      {/* VIDEO DE FONDO EXCLUSIVO PARA TELÉFONOS MÓVILES */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        className="hero-video hero-video-mobile"
+      >
+        <source src="/Multimedia/video-fondo-wildbloom-mobile.mp4" type="video/mp4" />
       </video>
 
       {/* LOGOS INTERACTIVOS FLOWERS X DOCS */}

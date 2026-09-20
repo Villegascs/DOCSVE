@@ -412,6 +412,23 @@ h4 {
     pointer-events: none;
 }
 
+.hero-video-desktop {
+    display: block;
+}
+
+.hero-video-mobile {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .hero-video-desktop {
+        display: none !important;
+    }
+    .hero-video-mobile {
+        display: block !important;
+    }
+}
+
 .hero-reference-container {
     position: absolute;
     top: 0;

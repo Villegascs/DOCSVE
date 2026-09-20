@@ -21,6 +21,32 @@ function formatEventDate(dateStr) {
   }
 }
 
+const VENEZUELAN_BANKS = [
+  "Banco de Venezuela (BDV)",
+  "Banesco",
+  "Mercantil",
+  "BBVA Provincial",
+  "Bancamiga",
+  "Banco Nacional de Crédito (BNC)",
+  "Banplus",
+  "Banco Bicentenario",
+  "Banco del Tesoro",
+  "Banco Plaza",
+  "Banco Exterior",
+  "Banco Fondo Común (BFC)",
+  "100% Banco",
+  "Bancaribe",
+  "Banco Sofitasa",
+  "Banco Activo",
+  "Bancrecer",
+  "Mi Banco",
+  "Banco Agrícola de Venezuela",
+  "Banco Caroní",
+  "BANFANB",
+  "Banco Venezolano de Crédito",
+  "Otro Banco Nacional"
+];
+
 export default function PurchaseModal({ event: initialEvent, onClose, onPurchaseSuccess }) {
   const [event, setEvent] = useState(initialEvent);
 
@@ -263,9 +289,7 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
     } else if (method === 'binance') {
       setSelectedBank('Binance');
     } else if (method === 'pagomovil') {
-      if (selectedBank === 'Zelle' || selectedBank === 'Binance') {
-        setSelectedBank('Provincial');
-      }
+      setSelectedBank('Banco de Venezuela (BDV)');
     }
   };
 
@@ -921,39 +945,72 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
 
                 <div className="form-grid">
                   <div className="form-group">
-                    <label htmlFor="bank">Método / Banco Emisor</label>
-                    <select 
-                      id="bank" 
-                      name="bank" 
-                      value={selectedBank}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setSelectedBank(val);
-                        if (val === 'Zelle') setPaymentMethod('zelle');
-                        else if (val === 'Binance') setPaymentMethod('binance');
-                        else if (val !== '') setPaymentMethod('pagomovil');
-                      }}
-                      required
-                    >
-                      <option value="">Selecciona una opción</option>
-                      <option value="Provincial">Provincial (Pago Móvil)</option>
-                      <option value="Banco de Venezuela (BDV)">Banco de Venezuela (BDV)</option>
-                      <option value="Banesco">Banesco</option>
-                      <option value="Mercantil">Mercantil</option>
-                      <option value="Bancamiga">Bancamiga</option>
-                      <option value="Otro">Otro / Pago Móvil</option>
-                      <option value="Zelle">Zelle</option>
-                      <option value="Binance">Binance</option>
-                    </select>
+                    {paymentMethod === 'pagomovil' ? (
+                      <>
+                        <label htmlFor="bank">Banco Emisor (Pago Móvil)</label>
+                        <select 
+                          id="bank" 
+                          name="bank" 
+                          value={selectedBank}
+                          onChange={(e) => setSelectedBank(e.target.value)}
+                          required
+                        >
+                          <option value="">Selecciona tu banco</option>
+                          {VENEZUELAN_BANKS.map(b => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                        </select>
+                      </>
+                    ) : paymentMethod === 'zelle' ? (
+                      <>
+                        <label htmlFor="bank">Método de Pago</label>
+                        <select 
+                          id="bank" 
+                          name="bank" 
+                          value="Zelle"
+                          disabled
+                          style={{ opacity: 0.9, cursor: 'not-allowed' }}
+                        >
+                          <option value="Zelle">Zelle (Dólares / USD)</option>
+                        </select>
+                        <input type="hidden" name="bank" value="Zelle" />
+                      </>
+                    ) : (
+                      <>
+                        <label htmlFor="bank">Método de Pago</label>
+                        <select 
+                          id="bank" 
+                          name="bank" 
+                          value="Binance"
+                          disabled
+                          style={{ opacity: 0.9, cursor: 'not-allowed' }}
+                        >
+                          <option value="Binance">Binance Pay (USDT)</option>
+                        </select>
+                        <input type="hidden" name="bank" value="Binance" />
+                      </>
+                    )}
                   </div>
                   <div className="form-group">
-                    <label htmlFor="ref">Últimos 6 dígitos (Ref)</label>
+                    <label htmlFor="ref">
+                      {paymentMethod === 'zelle' 
+                        ? 'Referencia o Titular Zelle' 
+                        : paymentMethod === 'binance' 
+                        ? 'Order ID / Pay ID Binance' 
+                        : 'Últimos dígitos (Ref)'}
+                    </label>
                     <input 
                       type="text" 
                       id="ref" 
                       name="ref" 
-                      placeholder="Ej. 948210" 
-                      maxLength="6" 
+                      placeholder={
+                        paymentMethod === 'zelle' 
+                          ? 'Ej. Ref o nombre de cuenta' 
+                          : paymentMethod === 'binance' 
+                          ? 'Ej. 201174382' 
+                          : 'Ej. 948210'
+                      } 
+                      maxLength={paymentMethod === 'pagomovil' ? 8 : 35} 
                       value={clientInfo.ref}
                       onChange={(e) => setClientInfo(prev => ({ ...prev, ref: e.target.value }))}
                       required 

@@ -22,7 +22,8 @@ const SPONSORS = [
   {
     name: 'Velada',
     src: '/Logos/sponsors/logo-velada.png',
-    alt: 'Velada'
+    alt: 'Velada',
+    url: 'https://www.instagram.com/velada_mrd?stkn=MXI4NzFtZWxxc20zZQ=='
   },
   {
     name: 'Xtreme Audiovisuales',

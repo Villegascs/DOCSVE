@@ -126,31 +126,60 @@ export default function AdminEvents() {
     }
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Verificar si es mayor a 900KB para evitar el límite de Firestore de 1MB
-    if (file.size > 900 * 1024) {
-      alert('⚠️ La imagen es muy pesada (más de 900KB). Para mantener la calidad original, súbela a un host externo (como Imgur) y pega el enlace en el campo "URL", o comprímela un poco antes de subirla.');
-      e.target.value = ''; // Reset input
-      return;
-    }
-
     setUploadingImage(true);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      // Guardar el string base64 crudo con calidad 100% original
-      const base64String = event.target.result;
-      setFormData({ ...formData, image_url: base64String });
+    try {
+      const optimizedDataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (readerEvent) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+            const maxDim = 1200; // Resolución HD óptima para web y móvil
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Exportar en WebP con alta fidelidad o JPEG
+            let resultUrl = canvas.toDataURL('image/webp', 0.85);
+            if (!resultUrl.startsWith('data:image/webp') || resultUrl.length > 600 * 1024) {
+              resultUrl = canvas.toDataURL('image/jpeg', 0.82);
+            }
+            // Asegurar que quede muy por debajo del límite de 1MB de Firestore (< 600KB)
+            if (resultUrl.length > 600 * 1024) {
+              resultUrl = canvas.toDataURL('image/jpeg', 0.72);
+            }
+            resolve(resultUrl);
+          };
+          img.onerror = () => reject(new Error('No se pudo decodificar la imagen'));
+          img.src = readerEvent.target.result;
+        };
+        reader.onerror = () => reject(new Error('Error leyendo el archivo'));
+        reader.readAsDataURL(file);
+      });
+
+      setFormData((prev) => ({ ...prev, image_url: optimizedDataUrl }));
+    } catch (err) {
+      console.error('Error procesando imagen:', err);
+      alert('Hubo un problema al procesar la imagen. Intenta con otro archivo.');
+    } finally {
       setUploadingImage(false);
-    };
-    reader.onerror = () => {
-      alert('Error leyendo el archivo');
-      setUploadingImage(false);
-    };
-    reader.readAsDataURL(file);
+    }
   };
 
   const addTicketType = () => {

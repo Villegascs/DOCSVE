@@ -68,6 +68,32 @@ export async function GET() {
   }
 }
 
+import Jimp from 'jimp';
+
+async function optimizeImageUrl(imageUrl) {
+  if (!imageUrl || typeof imageUrl !== 'string') return imageUrl;
+  if (!imageUrl.startsWith('data:image')) return imageUrl;
+  
+  // Si la cadena base64 ya es menor o igual a 650KB, es 100% segura para Firestore
+  if (imageUrl.length <= 650 * 1024) return imageUrl;
+
+  try {
+    const base64Data = imageUrl.split(',')[1];
+    if (!base64Data) return imageUrl;
+    const buffer = Buffer.from(base64Data, 'base64');
+    const image = await Jimp.read(buffer);
+    if (image.bitmap.width > 1200 || image.bitmap.height > 1200) {
+      image.scaleToFit(1200, 1200);
+    }
+    image.quality(82);
+    const optimizedBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+    return `data:image/jpeg;base64,${optimizedBuffer.toString('base64')}`;
+  } catch (err) {
+    console.error('Error optimizando imagen en servidor:', err);
+    return imageUrl;
+  }
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -83,13 +109,15 @@ export async function POST(request) {
       await batch.commit();
     }
 
+    const finalImageUrl = await optimizeImageUrl(image_url);
+
     const newEvent = {
       title,
       date,
       location,
       lineup: lineup || '',
       description: description || '',
-      image_url: image_url || '/Multimedia/photo_2026-05-21_17-54-29.jpg', // Fallback temporal
+      image_url: finalImageUrl || '/Multimedia/photo_2026-05-21_17-54-29.jpg', // Fallback temporal
       status: status || 'active',
       isMainEvent: !!isMainEvent,
       ticketLimit: Number(ticketLimit) || 0,
@@ -133,7 +161,9 @@ export async function PUT(request) {
       ticketTypes: Array.isArray(ticketTypes) ? ticketTypes : [],
       drinkPacks: Array.isArray(drinkPacks) ? drinkPacks : []
     };
-    if (image_url) updateData.image_url = image_url;
+    if (image_url) {
+      updateData.image_url = await optimizeImageUrl(image_url);
+    }
 
     await db.collection('events').doc(id).update(updateData);
     eventsCache = null;

@@ -63,7 +63,11 @@ export default async function Hero() {
 
       {/* TEXTO DE RESPONSABILIDAD AL FONDO CENTRADO */}
       <div className="hero-disclaimer">
-        <span>CELEBRA LA VIDA CON RESPONSABILIDAD, SI CONSUMES LICOR NO CONDUZCAS.</span>
+        <img
+          src="/Logos/texto-celebra-con-responsabilidad.png"
+          alt="Celebra la vida con responsabilidad, si consumes licor no conduzcas."
+          className="hero-disclaimer-img"
+        />
       </div>
 
       {/* BOTÓN GET TICKETS ABAJO A LA DERECHA */}

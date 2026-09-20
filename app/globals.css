@@ -2134,6 +2134,21 @@ h4 {
     padding: 6px 0;
 }
 
+.sponsors-ticker-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sponsors-ticker-link:hover .sponsors-ticker-logo,
+.sponsors-ticker-link:focus-visible .sponsors-ticker-logo {
+    opacity: 1;
+    transform: scale(1.08);
+}
+
 .sponsors-ticker-logo {
     height: clamp(30px, 3.8vw, 44px);
     max-height: 46px;

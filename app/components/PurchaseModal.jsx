@@ -1023,10 +1023,28 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
                   <input type="file" id="receipt" name="receipt" accept="image/*" required />
                 </div>
 
+                {/* NOTA SOBRE BANDEJA PRINCIPAL Y SPAM */}
+                <div style={{
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  borderRadius: '8px',
+                  padding: '0.85rem 1rem',
+                  marginTop: '1rem',
+                  marginBottom: '0.8rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem'
+                }}>
+                  <span style={{ fontSize: '1.2rem', flexShrink: 0 }}>ℹ️</span>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#e0e0e0', lineHeight: '1.45' }}>
+                    <strong>Nota:</strong> Si las entradas no te llegan a la bandeja principal, revisa tu <strong>carpeta de Spam o Correo no deseado</strong>.
+                  </p>
+                </div>
+
                 <button 
                   type="submit" 
                   className="btn-primary full-width" 
-                  style={{marginTop: '0.5rem'}} 
+                  style={{marginTop: '0.3rem'}} 
                   disabled={loading || maxAvailableTickets <= 0}
                 >
                   {loading ? 'ENVIANDO...' : (maxAvailableTickets <= 0 ? 'ENTRADAS AGOTADAS' : 'ENVIAR VERIFICACIÓN')}
@@ -1056,20 +1074,20 @@ export default function PurchaseModal({ event: initialEvent, onClose, onPurchase
             <p style={{fontSize: '0.9rem', color: '#aaa', marginTop: '0.4rem'}}>Una vez verificado, te enviaremos tus entradas al correo.</p>
 
             <div style={{
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
               borderRadius: '8px',
               padding: '1rem 1.2rem',
               margin: '1.8rem auto 0 auto',
               maxWidth: '460px',
               textAlign: 'left'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-neon)', fontWeight: 'bold', fontSize: '0.88rem', marginBottom: '0.35rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#E0FF00', fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '0.35rem' }}>
                 <span>📬</span>
-                <span>Al recibir tus entradas en el correo:</span>
+                <span>Nota sobre tus entradas:</span>
               </div>
-              <p style={{ margin: 0, fontSize: '0.82rem', color: '#b8b8b8', lineHeight: '1.5' }}>
-                Si en unos minutos no ves el correo en tu <strong>Bandeja Principal</strong>, revisa tu carpeta de <strong>Spam o Promociones</strong> y márcalo como <em>"No es spam"</em> para asegurar que siempre te lleguen directo.
+              <p style={{ margin: 0, fontSize: '0.84rem', color: '#cccccc', lineHeight: '1.5' }}>
+                Si las entradas no te llegan a la bandeja principal, es porque están en tu <strong>bandeja de Spam o Correo no deseado</strong>. Márcalas como <em>"No es spam"</em> para ver tus códigos QR de acceso.
               </p>
             </div>
 

@@ -9,10 +9,10 @@ export default function AdminSettings() {
 
   // Video Section Settings
   const [videoSettings, setVideoSettings] = useState({
-    title: 'AFTER MOVIE DOCS REDROOM',
+    title: '',
     subtitle: '',
-    description: 'Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.',
-    youtubeUrl: 'https://www.youtube.com/watch?v=hW7KevXA7w4'
+    description: '',
+    youtubeUrl: ''
   });
   const [savingVideo, setSavingVideo] = useState(false);
   const [videoToast, setVideoToast] = useState(null);

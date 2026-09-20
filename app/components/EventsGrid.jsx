@@ -16,7 +16,7 @@ const DEFAULT_MAIN_EVENT = {
   date: '03 DE OCTUBRE',
   location: 'CARACAS',
   lineup: "TONY FLORES\nSALOMON CORREA\nFOFY\nNOCTO(VE)",
-  description: 'Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.',
+  description: '',
   image_url: '/Multimedia/IMG_0724.PNG',
   status: 'active',
   isMainEvent: true,
@@ -33,18 +33,28 @@ const DEFAULT_MAIN_EVENT = {
   ]
 };
 
-export default function EventsGrid() {
+export default function EventsGrid({ initialEvents = null, initialVideoData = null }) {
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState(DEFAULT_MAIN_EVENT);
-  const [events, setEvents] = useState([DEFAULT_MAIN_EVENT]);
+  
+  const startingEvents = Array.isArray(initialEvents) && initialEvents.length > 0 
+    ? initialEvents 
+    : [DEFAULT_MAIN_EVENT];
+    
+  const [events, setEvents] = useState(startingEvents);
+  
+  const initialMain = startingEvents.find(e => e.isMainEvent && e.status === 'active') ||
+                      startingEvents.find(e => e.isMainEvent) ||
+                      startingEvents[0];
+                      
+  const [selectedEvent, setSelectedEvent] = useState(initialMain);
   const [loading, setLoading] = useState(false);
 
-  // Video Section Info
-  const [videoData, setVideoData] = useState({
-    title: "AFTER MOVIE DOCS REDROOM",
+  // Video Section Info: usa inmediatamente los datos entregados por SSR (cero destellos de datos viejos)
+  const [videoData, setVideoData] = useState(initialVideoData || {
+    title: "",
     subtitle: "",
-    description: "Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.",
-    youtubeUrl: "https://www.youtube.com/watch?v=hW7KevXA7w4"
+    description: "",
+    youtubeUrl: ""
   });
 
   const fetchEvents = async () => {
@@ -144,11 +154,13 @@ export default function EventsGrid() {
           <div className="video-session-grid">
             {/* COLUMNA IZQUIERDA: INFORMACIÓN Y DESCRIPCIÓN DEL VIDEO */}
             <div className="video-session-info">
-              <h2 className="session-title">{videoData.title}</h2>
+              {videoData.title && <h2 className="session-title">{videoData.title}</h2>}
               
-              <p className="session-description">
-                {videoData.description}
-              </p>
+              {videoData.description && (
+                <p className="session-description" style={{ whiteSpace: 'pre-line' }}>
+                  {videoData.description}
+                </p>
+              )}
 
               <div className="session-actions">
                 <button 
@@ -175,16 +187,18 @@ export default function EventsGrid() {
             </div>
 
             {/* COLUMNA DERECHA: RECUADRO CON VIDEO DE YOUTUBE */}
-            <div className="video-session-frame-wrapper">
-              <div className="video-session-frame">
-                <iframe 
-                  src={getEmbedUrl(videoData.youtubeUrl)} 
-                  title={videoData.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                  allowFullScreen
-                />
+            {videoData.youtubeUrl && (
+              <div className="video-session-frame-wrapper">
+                <div className="video-session-frame">
+                  <iframe 
+                    src={getEmbedUrl(videoData.youtubeUrl)} 
+                    title={videoData.title || "Video Oficial"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowFullScreen
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </section>

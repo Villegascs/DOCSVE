@@ -2,23 +2,37 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase-admin';
 
-const DEFAULT_VIDEO_DATA = {
-  title: "AFTER MOVIE DOCS REDROOM",
-  subtitle: "",
-  description: "Una inmersión sonora única en la escena underground. Revive la intensidad, los beats y la energía de nuestros artistas en vivo en una experiencia audiovisual diseñada para los verdaderos amantes de la música electrónica.",
-  youtubeUrl: "https://www.youtube.com/watch?v=hW7KevXA7w4"
-};
-
 export async function GET() {
   try {
     const doc = await db.collection('settings').doc('video_section').get();
     if (doc.exists) {
-      return NextResponse.json({ success: true, data: { ...DEFAULT_VIDEO_DATA, ...doc.data() } });
+      const data = doc.data();
+      return NextResponse.json({
+        success: true,
+        data: {
+          title: data.title ?? '',
+          subtitle: data.subtitle ?? '',
+          description: data.description ?? '',
+          youtubeUrl: data.youtubeUrl ?? '',
+          updated_at: data.updated_at
+        }
+      });
     }
-    return NextResponse.json({ success: true, data: DEFAULT_VIDEO_DATA });
+    return NextResponse.json({
+      success: true,
+      data: {
+        title: '',
+        subtitle: '',
+        description: '',
+        youtubeUrl: ''
+      }
+    });
   } catch (error) {
     console.error('Error fetching video section settings:', error);
-    return NextResponse.json({ success: true, data: DEFAULT_VIDEO_DATA });
+    return NextResponse.json({
+      success: false,
+      error: error.message
+    });
   }
 }
 
@@ -28,10 +42,10 @@ export async function POST(request) {
     const { title, subtitle, description, youtubeUrl } = body;
 
     const dataToSave = {
-      title: title || DEFAULT_VIDEO_DATA.title,
-      subtitle: subtitle || DEFAULT_VIDEO_DATA.subtitle,
-      description: description || DEFAULT_VIDEO_DATA.description,
-      youtubeUrl: youtubeUrl || DEFAULT_VIDEO_DATA.youtubeUrl,
+      title: title ?? '',
+      subtitle: subtitle ?? '',
+      description: description ?? '',
+      youtubeUrl: youtubeUrl ?? '',
       updated_at: new Date().toISOString()
     };
 

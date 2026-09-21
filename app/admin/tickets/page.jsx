@@ -116,7 +116,7 @@ export default function AdminTickets() {
                           {scannedCount} / {ticket.ticket_count}
                         </span>
                       </td>
-                      <td>{ticket.banco} - {ticket.referencia}</td>
+                      <td>{(ticket.bank || ticket.banco || 'N/A')} - {(ticket.ref || ticket.referencia || 'N/A')}</td>
                       <td>
                         <span className={`status-badge ${ticket.status}`}>
                           {ticket.status === 'approved' ? 'Aprobado' : ticket.status === 'pending' ? 'Pendiente' : 'Rechazado'}

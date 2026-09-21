@@ -150,6 +150,25 @@ export async function POST(req) {
 
     let telegramErrors = [];
     if (token && adminChatIds.length > 0) {
+      // Auto-recuperación de seguridad: asegura que el webhook siempre apunte a docsevents.com
+      fetch(`https://api.telegram.org/bot${token}/getWebhookInfo`)
+        .then(r => r.json())
+        .then(info => {
+          const expectedUrl = 'https://www.docsevents.com/api/telegram-webhook';
+          if (!info?.result?.url || info.result.url !== expectedUrl) {
+            console.warn('Webhook desalineado detectado, restaurando automáticamente...');
+            return fetch(`https://api.telegram.org/bot${token}/setWebhook`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                url: expectedUrl,
+                allowed_updates: ['message', 'callback_query']
+              })
+            });
+          }
+        })
+        .catch(() => {});
+
       const drinkPacksText = drinkPacks ? `\n🍾 <b>Combos</b>: ${escapeTgHtml(drinkPacks)}` : '';
       const caption = `🚨 <b>NUEVO PAGO RECIBIDO</b> 🚨\n\n🎪 <b>Evento</b>: ${escapeTgHtml(recordedEventTitle)}\n👤 <b>Nombre</b>: ${escapeTgHtml(name)}\n📧 <b>Email</b>: ${escapeTgHtml(email)}\n🆔 <b>Cédula</b>: ${escapeTgHtml(cedula)}\n📱 <b>Teléfono</b>: ${escapeTgHtml(phone)}\n🎟 <b>Entradas</b>: ${ticketCount}x ${escapeTgHtml(ticketTypeName)}${drinkPacksText}\n💰 <b>Total</b>: €${escapeTgHtml(totalEur)} • Bs. ${escapeTgHtml(totalBs)}\n🏦 <b>Método/Banco</b>: ${escapeTgHtml(bank)} (Ref: ${escapeTgHtml(ref)})`;
 

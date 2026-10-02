@@ -38,21 +38,30 @@ const SPONSORS = [
   },
   {
     name: 'Polar',
-    src: '/Logos/sponsors/polar.png',
+    src: '/Logos/sponsors/POLAR.png',
     alt: 'Polar',
-    url: 'https://www.instagram.com/empresaspolar/'
+    url: 'https://www.instagram.com/empresaspolar/',
+    scale: 1.45
   },
   {
     name: 'Tovarsat',
-    src: '/Logos/sponsors/tovarsat.png',
+    src: '/Logos/sponsors/TOVARSAT.png',
     alt: 'Tovarsat',
-    url: 'https://www.instagram.com/tovarsat/'
+    url: 'https://www.instagram.com/tovarsat/',
+    scale: 1.2
   },
   {
     name: 'Llena de Gracia',
     src: '/Logos/sponsors/llena-de-gracia.png',
     alt: 'Llena de Gracia Restaurant',
-    url: 'https://www.instagram.com/llenadegraciarestaurant/'
+    url: 'https://www.instagram.com/llenadegraciarestaurant/',
+    scale: 1.85
+  },
+  {
+    name: 'FOFY',
+    src: '/Logos/sponsors/FOFY.png',
+    alt: 'FOFY',
+    scale: 1.35
   }
 ];
 
@@ -66,6 +75,7 @@ export default function SponsorsTicker() {
         src={sponsor.src}
         alt={sponsor.alt}
         className="sponsors-ticker-logo"
+        style={sponsor.scale ? { '--sponsor-scale': sponsor.scale } : undefined}
         loading="lazy"
       />
     );

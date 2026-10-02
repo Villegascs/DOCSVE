@@ -2134,7 +2134,7 @@ h4 {
     display: flex;
     align-items: center;
     width: max-content;
-    animation: sponsorsScrollLeft 60s linear infinite;
+    animation: sponsorsScrollLeft 65s linear infinite;
     will-change: transform;
 }
 
@@ -2156,7 +2156,7 @@ h4 {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
-    padding: 6px 0;
+    padding: 8px 0;
 }
 
 .sponsors-ticker-link {
@@ -2171,25 +2171,27 @@ h4 {
 .sponsors-ticker-link:hover .sponsors-ticker-logo,
 .sponsors-ticker-link:focus-visible .sponsors-ticker-logo {
     opacity: 1;
-    transform: scale(1.08);
+    transform: scale(calc(var(--sponsor-scale, 1) * 1.08));
 }
 
 .sponsors-ticker-logo {
-    height: clamp(30px, 3.8vw, 44px);
-    max-height: 46px;
+    --sponsor-scale: 1;
+    height: clamp(32px, 4vw, 46px);
+    max-height: 50px;
     width: auto;
-    max-width: 220px;
+    max-width: 250px;
     object-fit: contain;
     display: block;
     filter: brightness(0) invert(1);
     opacity: 0.95;
+    transform: scale(var(--sponsor-scale, 1));
     transition: transform 0.25s ease, opacity 0.25s ease;
     user-select: none;
 }
 
 .sponsors-ticker-logo:hover {
     opacity: 1;
-    transform: scale(1.04);
+    transform: scale(calc(var(--sponsor-scale, 1) * 1.05));
 }
 
 @keyframes sponsorsScrollLeft {

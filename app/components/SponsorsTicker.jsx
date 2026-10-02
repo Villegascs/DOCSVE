@@ -40,27 +40,28 @@ const SPONSORS = [
     name: 'Polar',
     src: '/Logos/sponsors/POLAR.png',
     alt: 'Polar',
-    url: 'https://www.instagram.com/empresaspolar/',
+    url: 'https://www.instagram.com/tucervezapolar/',
     scale: 2.05
   },
   {
     name: 'Tovarsat',
     src: '/Logos/sponsors/TOVARSAT.png',
     alt: 'Tovarsat',
-    url: 'https://www.instagram.com/tovarsat/',
+    url: 'https://www.instagram.com/tovarsat.ca/',
     scale: 0.9
   },
   {
     name: 'Llena de Gracia',
     src: '/Logos/sponsors/llena-de-gracia.png',
     alt: 'Llena de Gracia Restaurant',
-    url: 'https://www.instagram.com/llenadegraciarestaurant/',
+    url: 'https://www.instagram.com/llenadegraciarest/',
     scale: 1.85
   },
   {
-    name: 'FOFY',
+    name: "Fofy's",
     src: '/Logos/sponsors/FOFY.png',
-    alt: 'FOFY',
+    alt: "Fofy's",
+    url: 'https://www.instagram.com/fofys.merida/',
     scale: 1.35
   }
 ];

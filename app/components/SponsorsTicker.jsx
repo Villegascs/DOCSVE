@@ -41,14 +41,14 @@ const SPONSORS = [
     src: '/Logos/sponsors/POLAR.png',
     alt: 'Polar',
     url: 'https://www.instagram.com/empresaspolar/',
-    scale: 1.45
+    scale: 2.05
   },
   {
     name: 'Tovarsat',
     src: '/Logos/sponsors/TOVARSAT.png',
     alt: 'Tovarsat',
     url: 'https://www.instagram.com/tovarsat/',
-    scale: 1.2
+    scale: 0.9
   },
   {
     name: 'Llena de Gracia',

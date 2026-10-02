@@ -35,6 +35,24 @@ const SPONSORS = [
     name: 'Luna Candles',
     src: '/Logos/sponsors/luna-candles.png',
     alt: 'Luna Candles'
+  },
+  {
+    name: 'Polar',
+    src: '/Logos/sponsors/polar.png',
+    alt: 'Polar',
+    url: 'https://www.instagram.com/empresaspolar/'
+  },
+  {
+    name: 'Tovarsat',
+    src: '/Logos/sponsors/tovarsat.png',
+    alt: 'Tovarsat',
+    url: 'https://www.instagram.com/tovarsat/'
+  },
+  {
+    name: 'Llena de Gracia',
+    src: '/Logos/sponsors/llena-de-gracia.png',
+    alt: 'Llena de Gracia Restaurant',
+    url: 'https://www.instagram.com/llenadegraciarestaurant/'
   }
 ];
 

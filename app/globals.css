@@ -2134,7 +2134,7 @@ h4 {
     display: flex;
     align-items: center;
     width: max-content;
-    animation: sponsorsScrollLeft 48s linear infinite;
+    animation: sponsorsScrollLeft 60s linear infinite;
     will-change: transform;
 }
 
